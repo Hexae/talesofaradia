@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Idle Fantasy: Woodcutting</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',sans-serif;background:#121212;color:#ddd}
+    .container{display:flex;height:100vh}
+
+    /* LOGIN */
+    #login-panel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#1f1f1f;padding:20px;border-radius:6px;width:260px;box-shadow:0 0 10px rgba(0,0,0,0.7)}
+    #login-panel h1{color:#fff;text-align:center;margin-bottom:12px}
+    #login-panel input{width:100%;padding:10px;margin:6px 0;border:none;border-radius:4px}
+    #login-panel .controls{display:flex;gap:8px;margin:12px 0}
+    #login-panel .controls button{flex:1;padding:10px;border:none;border-radius:4px;background:#3a7bd5;color:#fff;cursor:pointer}
+    #login-msg{color:#f88;text-align:center;margin-top:6px}
+
+    /* Sidebar */
+    .sidebar{width:300px;background:#1f1f1f;border-right:1px solid #333;padding:20px;display:flex;flex-direction:column;align-items:center;}
+    .sidebar h2{color:#ccc;text-align:center;margin-bottom:10px}
+    .skill-list{list-style:none;width:100%}
+    .skill-list li{display:flex;align-items:center;padding:10px;cursor:pointer;transition:background .2s}
+    .skill-list li.active,.skill-list li:hover{background:#2a2a2a}
+    .skill-list img{width:32px;height:32px;margin-right:8px}
+    #inventory,#leaderboard,#shop{width:100%;padding:0 16px;margin-bottom:20px}
+    #inventory h3,#leaderboard h3,#shop h3{color:#ccc;font-size:1rem;border-bottom:1px solid #444;padding-bottom:4px;margin-bottom:8px}
+    .inv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:12px;margin-top:12px}
+    .inv-card{background:#232323;border-radius:4px;box-shadow:0 2px 6px #000a;padding:8px;display:flex;flex-direction:column;align-items:center;font-size:.85rem}
+    .inv-card img{width:32px;height:32px;object-fit:contain;margin-bottom:2px;filter:drop-shadow(0 1px 2px #0007)}
+    .leader-list{list-style:none;padding-left:0}
+    .leader-list li{padding:6px 0;border-bottom:1px solid #333;color:#ddd;font-size:.9rem}
+    #shop h3 {display: flex;justify-content: space-between;align-items: center;cursor: pointer;user-select: none;}
+    #shop h3 .arrow {transition: transform 0.2s ease;}
+    #shop.collapsed #shop-grid {display: none;}
+    #shop.collapsed h3 .arrow {transform: rotate(-90deg);}
+    
+    /* Equipment Panel */
+    .equipment-panel {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-areas:
+        "ammo head cape"
+        "weapon body shield"
+        "ring legs ring2"
+        ".    boots    .";
+      grid-gap: 12px;
+      background: #3a3a3a url('chain-bg.png') center/cover no-repeat;
+      padding: 8px;
+      border: 2px solid #000;
+      border-radius: 4px;
+      width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 16px;
+    }
+    .slot{position:relative;width:40px;height:40px;background:#2e2e2e url('slot-bg.png') center/contain no-repeat;border:2px solid #000;box-shadow: inset 0 0 4px #000;}
+    .slot img{width:100%;height:100%;object-fit:contain;}
+    .slot-label{position:absolute;bottom:-14px;width:100%;text-align:center;font-size:0.65rem;color:#aaa}
+    .ammo{grid-area:ammo;}.head{grid-area:head;}.cape{grid-area:cape;}
+    .weapon{grid-area:weapon;}.body{grid-area:body;}.shield{grid-area:shield;}
+    .ring{grid-area:ring;}.legs{grid-area:legs;}.ring2{grid-area:ring2;}.boots{grid-area:boots;}
+
+    /* Main */
+    .main{flex:1;display:flex;flex-direction:column;padding:20px}
+    .main-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px}
+    .main-header h1{font-size:1.5rem;color:#fff}
+    .stats{font-size:.9rem;color:#aaa;display:flex;gap:12px;align-items:center}
+    .stats .hp{color:#f66}
+
+    /* Buttons */
+    #stop-btn, #resume-btn {padding:6px 12px;border:none;border-radius:4px;cursor:pointer;background:#d9534f;color:#fff;font-size:.85rem;}
+    #resume-btn {background:#5cb85c;}
+
+    /* Progress Bar */
+    #progress-container{width:100%;height:8px;background:#333;border-radius:4px;overflow:hidden;margin-bottom:8px}
+    #progress-bar{width:0%;height:100%;background:#4caf50;transition:width 0s}
+    #progress-text{text-align:center;color:#aaa;margin-bottom:16px;height:1.2em}
+
+    /* Tree Grid */
+    .tree-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;flex:1;overflow-y:auto}
+    .tree-card{position:relative;background:#1e1e1e;border:1px solid #333;border-radius:4px;display:flex;flex-direction:column;align-items:center;padding-bottom:8px;transition:transform .2s,border-color .2s}
+    .tree-card:hover{transform:translateY(-4px);border-color:#555}
+    .tree-card img{height:120px;width:auto;max-width:100%;object-fit:contain;background:#1e1e1e;margin-top:8px}
+    .label{padding:8px;background:#2a2a2a;color:#fff;text-align:center;font-size:.9rem;width:100%}
+    .tree-card button{margin:8px;padding:8px;width:80%;border:none;background:#3a7bd5;color:#fff;cursor:pointer;font-size:.9rem;border-radius:3px}
+    .tree-card button:disabled{background:#555;cursor:not-allowed}
+    .lock{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;color:#f66;font-size:1.1rem}
+    .health-bar{width:100%;height:6px;background:#333;border-radius:3px;overflow:hidden;margin-top:4px;}
+    .health-bar-inner{height:100%;background:#f44336;width:100%;transition:width .3s;}
+  </style>
+</head>
+<body>
+  <audio id="chop-sound" src="sounds/chop.wav" preload="auto"></audio>
+
+  <!-- LOGIN -->
+  <div id="login-panel">
+    <h1>Login</h1>
+    <input id="username" placeholder="Username"/>
+    <input id="password" type="password" placeholder="Password"/>
+    <div class="controls">
+      <button id="login-btn">Login</button>
+      <button id="reg-btn">Register</button>
+    </div>
+    <p id="login-msg"></p>
+  </div>
+
+  <!-- APP -->
+  <div class="container" id="app" style="display:none;">
+    <nav class="sidebar">
+      <h2>Skills</h2>
+      <ul class="skill-list"><li class="active"><img src="/icons/woodcutting/Lumbering.png"/><span>Woodcutting</span></li></ul>
+
+      <div id="inventory">
+        <h3>Inventory</h3>
+        <div id="inventory-grid" class="inv-grid"></div>
+      </div>
+
+       <div id="shop">
+        <h3>Shop<span class="arrow">▼</span></h3>
+    <div id="shop-grid" class="inv-grid"></div>
+  </div>
+
+      <div class="equipment-panel">
+        <div class="slot head"><div class="slot-label">Helm</div></div>
+        <div class="slot cape"><div class="slot-label">Cape</div></div>
+        <div class="slot neck"><div class="slot-label">Neck</div></div>
+        <div class="slot weapon"><div class="slot-label">Weapon</div></div>
+        <div class="slot body"><div class="slot-label">Body</div></div>
+        <div class="slot shield"><div class="slot-label">Shield</div></div>
+        <div class="slot legs"><div class="slot-label">Legs</div></div>
+        <div class="slot boots"><div class="slot-label">Boots</div></div>
+        <div class="slot ring"><div class="slot-label">Ring</div></div>
+        <div class="slot ring2"><div class="slot-label">Ring</div></div>
+      </div>
+
+      <div id="leaderboard">
+        <h3>Leaderboard</h3>
+        <ul id="leader-list" class="leader-list"></ul>
+      </div>
+    </nav>
+
+    <section class="main">
+      <div class="main-header">
+        <h1>Woodcutting</h1>
+        <div class="stats">
+          Level <span id="wc-level">1</span> |
+          Wood <span id="wood-count">0</span> |
+          XP <span id="wc-xp">0</span>/<span id="wc-next">0</span> |
+          Gold <span id="gold-count">0</span> |
+          <span class="hp">HP <span id="player-hp">100</span>/<span id="player-maxhp">100</span></span>
+          <button id="stop-btn">Stop</button>
+          <button id="resume-btn">Resume</button>
+        </div>
+      </div>
+      <div id="progress-container"><div id="progress-bar"></div></div>
+      <div id="progress-text"></div>
+      <div id="tree-grid" class="tree-grid"></div>
+    </section>
+  </div>
+
+  <script>
+    // — CONFIG & STATE —
+    const TITLE_ID = "1C6B29", MAX_LEVEL = 99;
+    const XP_TABLE = [];
+    (function(){
+      let cum = 0;
+      for(let lvl=1; lvl<=MAX_LEVEL; lvl++){
+        cum += Math.floor(lvl + 300*Math.pow(2,lvl/7));
+        XP_TABLE[lvl] = Math.floor(cum/4);
+      }
+    })();
+    function nextXpFor(l){ return l<MAX_LEVEL ? XP_TABLE[l+1]-XP_TABLE[l] : Infinity; }
+
+    // price list
+    const PRICES = {
+      Logs:1, "Birch Logs":2, "Oak Logs":5, "Willow Logs":8, "Sakura Logs":12,
+      "Japanese Maple Logs":20, "Sycamore Maple Logs":25,
+      "Gigantic Oak Logs":30, "Palm Logs":35,
+      "Pitch Pine Logs":40, "Eastern Redwood Logs":45,
+      "Bird Nests":200
+    };
+
+    let sessionTicket, playFabId;
+    let timer, nextTick, interval;
+    let autoEnabled = true;
+    let state = {
+      level:1, xp:0, wood:0, gold:0,
+      health:100, maxHealth:100,
+      inventory:{
+        Logs:0, "Birch Logs":0, "Oak Logs":0, "Willow Logs":0, "Sakura Logs":0,
+        "Japanese Maple Logs":0, "Sycamore Maple Logs":0, "Gigantic Oak Logs":0,
+        "Palm Logs":0, "Pitch Pine Logs":0, "Eastern Redwood Logs":0, "Bird Nests":0
+      },
+      inCombat:false, monsterHP:0, monsterMaxHP:0,
+      lastActive:Date.now()
+    };
+
+    const ICON_PATH = "/icons/woodcutting/";
+    const TREES = [
+      {lvl:1, img:ICON_PATH+'Tree_Level1.png', name:'Tree', xp:25, itemKey:'Logs'},
+      {lvl:10, img:ICON_PATH+'Tree_Oak.png', name:'Oak', xp:37.5, itemKey:'Oak Logs'},
+      {lvl:30, img:ICON_PATH+'Tree_Willow.png', name:'Willow', xp:67.5, itemKey:'Willow Logs'},
+      {lvl:40, img:ICON_PATH+'Tree_Sakura.png', name:'Sakura', xp:80, itemKey:'Sakura Logs'},
+      {lvl:60, img:ICON_PATH+'Tree_Maple.png', name:'Sycamore Maple', xp:175, itemKey:'Sycamore Maple Logs'},
+      {lvl:70, img:ICON_PATH+'Tree_Gigantic_Oak.png', name:'Gigantic Oak', xp:200, itemKey:'Gigantic Oak Logs'},
+      {lvl:80, img:ICON_PATH+'Tree_Palm.png', name:'Palm', xp:250, itemKey:'Palm Logs'},
+      {lvl:90, img:ICON_PATH+'Tree_Pine.png', name:'Pitch Pine', xp:380, itemKey:'Pitch Pine Logs'},
+      {lvl:95, img:ICON_PATH+'Tree_Gigantic.png', name:'Eastern Redwood', xp:420, itemKey:'Eastern Redwood Logs'},
+      {lvl:99, img:ICON_PATH+'Tree_Legendary.png', name:'Aradias Legendary', xp:480, itemKey:'Bird Nests'}
+    ];
+
+    // — PLAYFAB HELPER & AUTH —
+    async function playfabCall(ep, body){
+      const headers={'Content-Type':'application/json','X-ReportErrorAsSuccess':'true'};
+      if(sessionTicket) headers['X-Authentication']=sessionTicket;
+      const res=await fetch(`https://${TITLE_ID}.playfabapi.com/Client/${ep}`,{
+        method:'POST', headers, body:JSON.stringify({TitleId:TITLE_ID, ...body})
+      });
+      const j=await res.json();
+      if(j.error) throw j.error;
+      return j.data;
+    }
+    async function auth(isLogin){
+      const u=document.getElementById('username').value;
+      const p=document.getElementById('password').value;
+      let payload={Username:u,Password:p};
+      if(!isLogin){
+        payload.DisplayName=u;
+        payload.RequireBothUsernameAndEmail=false;
+        payload.Email=`${u}@example.com`;
+      }
+      try{
+        const r=await playfabCall(isLogin?'LoginWithPlayFab':'RegisterPlayFabUser',payload);
+        sessionTicket=r.SessionTicket; playFabId=r.PlayFabId;
+        document.getElementById('login-panel').style.display='none';
+        document.getElementById('app').style.display='';
+        initGame();
+      }catch(e){
+        document.getElementById('login-msg').textContent=e.errorMessage||JSON.stringify(e);
+      }
+    }
+    document.getElementById('login-btn').onclick=()=>auth(true);
+    document.getElementById('reg-btn').onclick=()=>auth(false);
+
+    // — LOAD / SAVE STATE —
+    async function saveState(){
+      state.lastActive=Date.now();
+      try{
+        await playfabCall('UpdateUserData',{Data:{state:JSON.stringify(state)}});
+        await playfabCall('UpdatePlayerStatistics',{Statistics:[{StatisticName:'WoodcuttingScore',Value:state.wood}]});
+      }catch{}
+      refreshLeaderboard();
+    }
+    async function loadState(){
+      try{
+        const r=await playfabCall('GetUserData',{Keys:['state']});
+        if(r.Data.state?.Value) Object.assign(state,JSON.parse(r.Data.state.Value));
+        // offline progress
+        const now=Date.now(), elapsed=now-(state.lastActive||now); const iv=getInterval();
+        const chops=Math.floor(elapsed/iv);
+        if(chops>0){
+          const t=TREES.filter(t=>state.level>=t.lvl).pop();
+          state.wood+=chops;
+          state.inventory[t.itemKey]=(state.inventory[t.itemKey]||0)+chops;
+          state.xp+=(t.xp/2)*chops;
+          while(state.level<MAX_LEVEL&&state.xp>=XP_TABLE[state.level+1]) state.level++;
+          alert(`Welcome back! You chopped ${chops} ${t.name}(s) while away.`);
+        }
+      }catch{}
+    }
+
+    // — UI RENDERING —
+    function renderInventory(){
+      const grid=document.getElementById('inventory-grid'); grid.innerHTML='';
+      for(const [name,qty] of Object.entries(state.inventory)){
+        if(qty>0){
+          const card=document.createElement('div'); card.className='inv-card';
+          card.innerHTML=`
+            <img src="${ICON_PATH}${name.replace(/ /g,'_')}.png" onerror="this.style.opacity=0.25">
+            <div class="qty">×${qty}</div>
+            <div class="iname">${name}</div>
+          `;
+          grid.appendChild(card);
+        }
+      }
+    }
+    function renderShop(){
+      const shop=document.getElementById('shop-grid'); shop.innerHTML='';
+      for(const [item,price] of Object.entries(PRICES)){
+        const qty=state.inventory[item]||0;
+        const card=document.createElement('div'); card.className='inv-card';
+        card.innerHTML=`
+          <div class="iname">${item}</div>
+          <div class="qty">You have: ${qty}</div>
+          <div class="qty">Price: ${price} gold</div>
+          <button ${qty===0?'disabled':''}>Sell 1</button>
+        `;
+        const btn=card.querySelector('button');
+        btn.addEventListener('click',async()=>{
+          state.inventory[item]--; state.gold+=price;
+          await saveState();
+          document.getElementById('gold-count').textContent=state.gold;
+          renderInventory(); renderShop();
+        });
+        shop.appendChild(card);
+      }
+    }
+    function renderGrid(){
+      document.getElementById('wc-level').textContent=state.level;
+      document.getElementById('wood-count').textContent=state.wood;
+      document.getElementById('wc-xp').textContent=state.xp.toFixed(1);
+      document.getElementById('wc-next').textContent=state.level<MAX_LEVEL?nextXpFor(state.level).toFixed(1):'—';
+      document.getElementById('player-hp').textContent=state.health;
+      document.getElementById('player-maxhp').textContent=state.maxHealth;
+
+      const grid=document.getElementById('tree-grid'); grid.innerHTML='';
+      TREES.forEach(t=>{
+        const card=document.createElement('div'); card.className='tree-card';
+        card.innerHTML=`
+          <img src="${t.img}" alt="${t.name}">
+          <div class="label">${t.name} (Lv ${t.lvl})</div>
+          <button ${state.level<t.lvl?'disabled':''}>Chop</button>
+          ${state.level<t.lvl?`<div class="lock">Unlock at ${t.lvl}</div>`:''}
+        `;
+        const btn=card.querySelector('button');
+        btn?.addEventListener('click',async()=>{
+          if(state.inCombat) return;
+          document.getElementById('chop-sound').currentTime=0;
+          document.getElementById('chop-sound').play();
+          document.getElementById('progress-text').textContent=`Chopping ${t.name}...`;
+          document.getElementById('progress-bar').style.transition='width .3s';
+          document.getElementById('progress-bar').style.width='100%';
+          state.wood++; state.inventory[t.itemKey]++; state.xp+=t.xp;
+          while(state.level<MAX_LEVEL&&state.xp>=XP_TABLE[state.level+1]) state.level++;
+          await saveState(); renderGrid();
+          setTimeout(()=>{
+            document.getElementById('progress-bar').style.transition='width 0s';
+            document.getElementById('progress-bar').style.width='0%';
+            document.getElementById('progress-text').textContent='';
+          },300);
+        });
+        grid.appendChild(card);
+      });
+
+      if(state.level>=2){
+        const c=document.createElement('div'); c.className='tree-card';
+        c.innerHTML=`
+          <div class="label">Goblin (Lv 2)</div>
+          <button id="combat-btn">Attack Goblin</button>
+          <div id="combat-info" style="font-size:.8rem;padding:4px;color:#ddd"></div>
+          <div class="health-bar"><div id="monster-hp-bar" class="health-bar-inner"></div></div>
+        `;
+        grid.appendChild(c);
+        const info=c.querySelector('#combat-info'), hpBar=c.querySelector('#monster-hp-bar'), atkBtn=c.querySelector('#combat-btn');
+        function resetMonster(){
+          state.monsterMaxHP=50; state.monsterHP=50; state.inCombat=true;
+          info.textContent='A Goblin appears!'; hpBar.style.width='100%';
+        }
+        atkBtn.addEventListener('click',async()=>{
+          if(!state.inCombat) resetMonster();
+          const pd=Math.floor(Math.random()*6)+5;
+          state.monsterHP=Math.max(0,state.monsterHP-pd);
+          info.textContent=`You hit Goblin for ${pd}! `;
+          hpBar.style.width=`${(state.monsterHP/state.monsterMaxHP)*100}%`;
+          if(state.monsterHP>0){
+            const md=Math.floor(Math.random()*5)+1;
+            state.health=Math.max(0,state.health-md);
+            info.textContent+=`Goblin hits you for ${md}!`;
+          }
+          if(state.monsterHP<=0){
+            info.textContent='You defeated the Goblin! +20 XP';
+            state.xp+=20; state.inCombat=false;
+            while(state.level<MAX_LEVEL&&state.xp>=XP_TABLE[state.level+1]) state.level++;
+            await saveState(); setTimeout(renderGrid,500);
+          }
+          if(state.health<=0){
+            info.textContent='You were defeated! Reload to recover.';
+            atkBtn.disabled=true;
+          }
+          document.getElementById('player-hp').textContent=state.health;
+        });
+      }
+
+      renderInventory();
+    }
+
+    // — LEADERBOARD —
+    async function refreshLeaderboard(){
+      try{
+        const r=await playfabCall('GetLeaderboard',{
+          StatisticName:'WoodcuttingScore',StartPosition:0,MaxResultsCount:5
+        });
+        const list=document.getElementById('leader-list'); list.innerHTML='';
+        r.Leaderboard.forEach(p=>{
+          const li=document.createElement('li');
+          li.textContent=`${p.Position+1}. ${p.DisplayName||p.PlayFabId} – ${p.StatValue}`;
+          list.appendChild(li);
+        });
+      }catch{}
+    }
+
+    // — AUTO-CHOP & CONTROLS —
+    function getInterval(){ const min=2000,max=15000; return Math.min(max, min+(state.level-1)*(max-min)/(MAX_LEVEL-1)); }
+    function animate(){
+      const pct=(Date.now()-(nextTick-interval))/interval;
+      const bar=document.getElementById('progress-bar');
+      bar.style.transition='width 0s';
+      bar.style.width=`${Math.min(Math.max(pct,0),1)*100}%`;
+      if(pct<1) requestAnimationFrame(animate);
+    }
+    async function autoTick(){
+      if(!autoEnabled) return;
+      if(state.inCombat){ timer=setTimeout(autoTick,1000); return; }
+      const t=TREES.filter(t=>state.level>=t.lvl).pop();
+      document.getElementById('progress-text').textContent=`Chopping ${t.name}...`;
+      state.wood++; state.inventory[t.itemKey]++; state.xp+=t.xp/2;
+      while(state.level<MAX_LEVEL&&state.xp>=XP_TABLE[state.level+1]) state.level++;
+      await saveState(); renderGrid(); schedule();
+      setTimeout(()=>{
+        const bar=document.getElementById('progress-bar');
+        bar.style.transition='width 0s';
+        bar.style.width='0%';
+        document.getElementById('progress-text').textContent='';
+      },interval);
+    }
+    function schedule(){
+      clearTimeout(timer);
+      if(!autoEnabled) return;
+      interval=getInterval(); nextTick=Date.now()+interval;
+      animate(); timer=setTimeout(autoTick,interval);
+    }
+    const stopBtn=document.getElementById('stop-btn'), resumeBtn=document.getElementById('resume-btn');
+    stopBtn.onclick=()=>{ autoEnabled=false; clearTimeout(timer); stopBtn.style.display='none'; resumeBtn.style.display=''; };
+    resumeBtn.onclick=()=>{ autoEnabled=true; resumeBtn.style.display='none'; stopBtn.style.display=''; schedule(); };
+    resumeBtn.style.display='none';
+
+    // — INITIALIZATION —
+    async function initGame(){
+      await loadState();
+      document.getElementById('gold-count').textContent=state.gold;
+      renderGrid();
+      renderShop();
+      refreshLeaderboard();
+      schedule();
+    }
+
+  const shopPanel  = document.getElementById('shop');
+  const shopHeader = shopPanel.querySelector('h3');
+  shopHeader.addEventListener('click', () => {
+    shopPanel.classList.toggle('collapsed');
+  });
+  </script>
+</body>
+</html>
