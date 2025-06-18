@@ -1,0 +1,2 @@
+# talesofaradia
+Fantasy Idle RPG
