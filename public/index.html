@@ -84,10 +84,65 @@
     .tree-card:hover {transform: translateY(-4px);border-color: #b79f1c;box-shadow: 0 0 12px #b79f1c, 0 2px 6px rgba(0,0,0,0.6);}
     .tree-card.active {border-color: #30d549;box-shadow: 0 0 8px #30d549;}
     #firemaking-header img {animation: campfire-flicker 0.8s infinite alternate;}
+
+    /* Fishing cards match inventory look */
+.item-card {
+  position: relative;    /* ← add this line */
+  background: #232323;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px #000a;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: .82rem;
+  text-align: center;
+}
+/* Fishing grid layout */
+#fish-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* Progress bar styling */
+.progress-container {
+  width: 100%;
+  height: 8px;
+  background: #333;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 12px;
+}
+#fish-progress-bar {
+  width: 0;
+  height: 100%;
+  background: #4caf50;
+  transition: width 0.3s;
+}
+
+#fishing-panel .item-card img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  margin-bottom: 8px;
+}
+
+/* Fishing controls */
+#fishing-panel .controls > button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background: #3a7bd5;
+  color: #fff;
+  font-size: .85rem;
+  margin-right: 8px;
+}
     @keyframes campfire-flicker {
       0%   { filter: drop-shadow(0 4px 18px #ffb32099);}
       100% { filter: drop-shadow(0 10px 28px #ff940055);}}
-  </style>
 </style>
 </head>
 <body>
@@ -120,14 +175,18 @@
         <div class="gold-balance">Gold: <span id="gold-count">0</span></div>
       </div>
       <h2>Skills</h2>
-      <ul class="skill-list">
-        <li class="active" data-skill="woodcutting">
-          <img src="icons/woodcutting/Lumbering.png"/><span>Woodcutting</span>
-        </li>
-        <li data-skill="firemaking">
-          <img src="icons/firemaking/Firemaking.png"/><span>Firemaking</span>
-        </li>
-      </ul>
+        <ul class="skill-list">
+          <li class="active" data-skill="woodcutting">
+            <img src="icons/woodcutting/Lumbering.png"/><span>Woodcutting</span>
+          </li>
+          <li data-skill="firemaking">
+            <img src="icons/firemaking/Firemaking.png"/><span>Firemaking</span>
+          </li>
+          <li data-skill="fishing">
+            <img src="icons/fishing/Fish_Shrimp.png"/><span>Fishing</span>
+          </li>
+        </ul>
+
       <div class="equipment-panel">
         <div class="slot head"><div class="slot-label">Helm</div></div>
         <div class="slot cape"><div class="slot-label">Cape</div></div>
@@ -199,6 +258,25 @@
             </div>
             <div id="fm-progress-text" style="color:#ccc; margin-top:8px; min-height:20px;"></div>
           </div>
+        </div>
+      </div>
+
+        <!-- Fishing -->
+      <div id="fishing-panel" class="panel" style="display:none;">
+        <h1>Fishing</h1>
+        <div class="stats">
+          Level: <span id="fish-level">1</span> |
+          Count: <span id="fish-count">0</span> |
+          XP: <span id="fish-xp">0</span>/<span id="fish-next">4</span>
+        </div>
+        <div class="progress-container">
+          <div id="fish-progress-bar"></div>
+          <div id="fish-progress-text"></div>
+        </div>
+        <div id="fish-grid"></div>
+        <div class="controls">
+          <button id="fish-start">Start Fishing</button>
+          <button id="fish-stop">Stop Fishing</button>
         </div>
       </div>
 
@@ -602,6 +680,148 @@
     };
     });
   </script>
-  <script src="firemaking.js"></script>
+ <script type="module">
+  // —— Fishing module integrated with global state & persistence ——
+  // Ensure the main `state` object holds inventory & fishing
+  state.inventory = state.inventory || {};
+  state.fishing   = state.fishing   || { lvl: 1, xp: 0, cnt: 0 };
+  const fishState = state.fishing;
+
+  // XP table
+  const XP = (() => {
+    const maxLevel = 99;
+    const table = new Array(maxLevel + 2).fill(0);
+    for (let lvl = 1; lvl <= maxLevel; lvl++) {
+      let sum = 0;
+      for (let i = 1; i <= lvl; i++) {
+        sum += Math.floor(i + 300 * Math.pow(2, i / 7));
+      }
+      table[lvl] = Math.floor(sum / 4);
+    }
+    return table;
+  })();
+  const MAX = XP.length - 2;
+
+  // Fish definitions
+  const FISH = [
+    { lvl: 1,  name: 'Shrimp',    img: 'Fish_Shrimp.png',    xp: 10  },
+    { lvl: 5,  name: 'Anchovy',   img: 'Fish_Anchovy.png',   xp: 15  },
+    { lvl: 30, name: 'Salmon',    img: 'Fish_Salmon.png',    xp: 50  },
+    { lvl: 40, name: 'Trout',     img: 'Fish_Trout.png',     xp: 65  },
+    { lvl: 60, name: 'Tuna',      img: 'Fish_Tuna.png',      xp: 85  },
+    { lvl: 80, name: 'Lobster',   img: 'Fish_Lobster.png',   xp: 120 },
+    { lvl: 90, name: 'Swordfish', img: 'Fish_Swordfish.png', xp: 150 },
+    { lvl: 95, name: 'Shark',     img: 'Fish_Shark.png',     xp: 200 },
+    { lvl: 99, name: 'Leviathan', img: 'Fish_Leviathan.png', xp: 300 }
+  ];
+
+  // DOM IDs
+  const IDS = {
+    level: 'fish-level', count: 'fish-count', xp: 'fish-xp', next: 'fish-next',
+    bar: 'fish-progress-bar', text: 'fish-progress-text', grid: 'fish-grid',
+    start: 'fish-start', stop: 'fish-stop'
+  };
+
+  // Cache UI
+  const ui = {};
+  function cacheUI() {
+    for (let k in IDS) ui[k] = document.getElementById(IDS[k]);
+  }
+
+  function nextXp(lvl) {
+    return lvl < MAX ? XP[lvl + 1] - XP[lvl] : Infinity;
+  }
+
+  // Render grid & stats
+  function renderFishing() {
+    ui.level.textContent = fishState.lvl;
+    ui.count.textContent = fishState.cnt;
+    ui.xp.textContent    = fishState.xp.toFixed(1);
+    ui.next.textContent  = fishState.lvl < MAX ? nextXp(fishState.lvl).toFixed(1) : '—';
+
+    ui.grid.innerHTML = '';
+    FISH.forEach(f => {
+      const unlocked = fishState.lvl >= f.lvl;
+      const card = document.createElement('div'); card.className = 'item-card';
+      card.innerHTML = `
+        <img src="icons/fishing/${f.img}" onerror="this.src='icons/placeholder.png'">
+        <div class="label">${f.name} (Lv ${f.lvl})</div>
+        <button ${!unlocked?'disabled':''}>Fish</button>
+        ${!unlocked?`<div class="lock">Unlock at ${f.lvl}</div>`:''}
+      `;
+      card.querySelector('button').addEventListener('click', () => catchFish(f));
+      ui.grid.appendChild(card);
+    });
+  }
+
+  // Animate bar
+  function updateBar(dur = .3) {
+    ui.bar.style.transition = `width ${dur}s`;
+    ui.bar.style.width      = '100%';
+  }
+  function resetBar() {
+    ui.bar.addEventListener('transitionend', function handler() {
+      ui.bar.style.transition = '';
+      ui.bar.style.width      = '0%';
+      ui.text.textContent     = '';
+      ui.bar.removeEventListener('transitionend', handler);
+    });
+  }
+
+  // Single catch
+  function catchFish(fish) {
+    fishState.cnt++;
+    fishState.xp  += fish.xp;
+    // Add to shared inventory
+    state.inventory[fish.name] = (state.inventory[fish.name] || 0) + 1;
+
+    // Level up
+    while (fishState.lvl < MAX && fishState.xp >= nextXp(fishState.lvl)) {
+      fishState.xp  -= nextXp(fishState.lvl);
+      fishState.lvl++;
+    }
+    if (fishState.lvl >= MAX) fishState.xp = 0;
+
+    ui.text.textContent = `Fishing ${fish.name}…`;
+    updateBar(); renderFishing(); resetBar();
+    saveState(); renderInventory();
+  }
+
+  // Auto fishing
+  let autoTimer = null, isRunning = false;
+  function computeInterval() {
+    const min = 2000, max = 15000;
+    return min + (fishState.lvl - 1) * (max - min) / (MAX - 1);
+  }
+  function autoTick() {
+    if (!isRunning) return;
+    const avail = FISH.filter(f => fishState.lvl >= f.lvl);
+    catchFish(avail[avail.length - 1]);
+    autoTimer = setTimeout(autoTick, computeInterval());
+  }
+
+  // Controls
+  function initFishing() {
+    cacheUI();
+    ui.start.addEventListener('click', () => { if (!isRunning) { isRunning = true; autoTick(); }});
+    ui.stop .addEventListener('click', () => { isRunning = false; clearTimeout(autoTimer); });
+    renderFishing();
+  }
+
+  // Tab switching
+  window.addEventListener('DOMContentLoaded', () => {
+    initFishing();
+    const tabs      = document.querySelectorAll('.skill-list li');
+    const fishPanel = document.getElementById('fishing-panel');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        fishPanel.style.display = (tab.dataset.skill === 'fishing') ? '' : 'none';
+        if (tab.dataset.skill === 'fishing') renderFishing();
+      });
+    });
+  });
+</script>
+<script src="firemaking.js"></script>
 </body>
 </html>
