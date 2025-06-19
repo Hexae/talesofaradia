@@ -36,9 +36,9 @@
     .leader-list li { padding: 6px 0; border-bottom: 1px solid #333; color: #ddd; font-size: .9rem; }
     #shop h3 { display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; }
     #shop h3 .arrow { transition: transform 0.2s ease; }
-    #shop.collapsed #shop-grid { display: none; }
+    #shop.collapsed #shop-grid, #shop.collapsed .inv-grid { display: none; !important}
     #shop.collapsed h3 .arrow { transform: rotate(-90deg); }
-    #shop h4 { color: #ccc; font-size: 1rem; margin: 12px 0 4px 16px; padding-bottom: 4px; border-bottom: 1px solid #444; }
+    #shop h4 { color: #ccc; font-size: 1rem; margin: 12px auto; padding-bottom: 4px; border-bottom: 1px solid #444; text-align: center;}
     .shop-filters { display: flex; justify-content: center; gap: 8px; margin: 8px 0; }
     .shop-filters button { padding: 4px 8px; border: none; border-radius: 4px; background: #2a2a2a; color: #fff; cursor: pointer; font-size: .85rem; white-space:nowrap;}
     .shop-filters button.active { background: #3a7bd5; }
@@ -149,9 +149,11 @@
           <button data-filter="sell">Sell</button>
           <button data-filter="buy">Buy</button>
         </div>
-        <div id="shop-grid" class="inv-grid"></div>
-        <h4 id="buy-header">Buy Items</h4>
-        <div id="buy-grid" class="inv-grid"></div>
+        <div class="shop-list">
+          <h4 id="buy-header">Buy Items</h4>
+          <div id="shop-grid" class="inv-grid"></div>
+          <div id="buy-grid" class="inv-grid"></div>
+        </div>
       </div>
       
     </nav>
@@ -236,7 +238,7 @@
     document.getElementById('reg-btn').onclick   = () => auth(false);
 
     // — CONFIG & STATE —
-    let TITLE_ID = "1C6B29", MAX_LEVEL = 99, XP_TABLE = [];
+    let TITLE_ID = "XXXXX", MAX_LEVEL = 99, XP_TABLE = [];
     (function(){
       let cum = 0;
       for (let lvl = 1; lvl <= MAX_LEVEL; lvl++) {
@@ -311,18 +313,18 @@
 
     const ICON_PATH = "icons/woodcutting/";
     let TREES = [
-      {lvl:1,  xp:25,    name:'Tree',              itemKey:'Logs',                 img:ICON_PATH+'Tree_Level1.png'},
-      {lvl:10, xp:37.5,  name:'Oak',               itemKey:'Oak Logs',             img:ICON_PATH+'Tree_Oak.png'},
-      {lvl:20, xp:50,    name:'Birch',             itemKey:'Birch Logs',           img:ICON_PATH+'Tree_Birch.png'},
-      {lvl:30, xp:67.5,  name:'Willow',            itemKey:'Willow Logs',          img:ICON_PATH+'Tree_Willow.png'},
-      {lvl:40, xp:80,    name:'Sakura',            itemKey:'Sakura Logs',          img:ICON_PATH+'Tree_Sakura.png'},
-      {lvl:50, xp:100,   name:'Japanese Maple',    itemKey:'Japanese Maple Logs',  img:ICON_PATH+'Tree_Japanese_Maple.png'},
-      {lvl:60, xp:175,   name:'Sycamore Maple',    itemKey:'Sycamore Maple Logs',  img:ICON_PATH+'Tree_Maple.png'},
-      {lvl:70, xp:200,   name:'Gigantic Oak',      itemKey:'Gigantic Oak Logs',    img:ICON_PATH+'Tree_Gigantic_Oak.png'},
-      {lvl:80, xp:250,   name:'Palm',              itemKey:'Palm Logs',            img:ICON_PATH+'Tree_Palm.png'},
-      {lvl:90, xp:380,   name:'Pitch Pine',        itemKey:'Pitch Pine Logs',      img:ICON_PATH+'Tree_Pine.png'},
-      {lvl:95, xp:420,   name:'Eastern Redwood',   itemKey:'Eastern Redwood Logs', img:ICON_PATH+'Tree_Gigantic.png'},
-      {lvl:99, xp:480,   name:'Aradias Legendary', itemKey:'Bird Nests',           img:ICON_PATH+'Tree_Legendary.png'}
+      {id:1,  lvl:1,  xp:25,    name:'Tree',              itemKey:'Logs',                 img:ICON_PATH+'Tree_Level1.png'},
+      {id:2,  lvl:10, xp:37.5,  name:'Oak',               itemKey:'Oak Logs',             img:ICON_PATH+'Tree_Oak.png'},
+      {id:3,  lvl:20, xp:50,    name:'Birch',             itemKey:'Birch Logs',           img:ICON_PATH+'Tree_Birch.png'},
+      {id:4,  lvl:30, xp:67.5,  name:'Willow',            itemKey:'Willow Logs',          img:ICON_PATH+'Tree_Willow.png'},
+      {id:5,  lvl:40, xp:80,    name:'Sakura',            itemKey:'Sakura Logs',          img:ICON_PATH+'Tree_Sakura.png'},
+      {id:6,  lvl:50, xp:100,   name:'Japanese Maple',    itemKey:'Japanese Maple Logs',  img:ICON_PATH+'Tree_Japanese_Maple.png'},
+      {id:7,  lvl:60, xp:175,   name:'Sycamore Maple',    itemKey:'Sycamore Maple Logs',  img:ICON_PATH+'Tree_Maple.png'},
+      {id:8,  lvl:70, xp:200,   name:'Gigantic Oak',      itemKey:'Gigantic Oak Logs',    img:ICON_PATH+'Tree_Gigantic_Oak.png'},
+      {id:9,  lvl:80, xp:250,   name:'Palm',              itemKey:'Palm Logs',            img:ICON_PATH+'Tree_Palm.png'},
+      {id:10, lvl:90, xp:380,   name:'Pitch Pine',        itemKey:'Pitch Pine Logs',      img:ICON_PATH+'Tree_Pine.png'},
+      {id:11, lvl:95, xp:420,   name:'Eastern Redwood',   itemKey:'Eastern Redwood Logs', img:ICON_PATH+'Tree_Gigantic.png'},
+      {id:12, lvl:99, xp:480,   name:'Aradias Legendary', itemKey:'Bird Nests',           img:ICON_PATH+'Tree_Legendary.png'}
     ];
     window.TREES = TREES;
 
