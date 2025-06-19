@@ -3,103 +3,98 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Idle Fantasy: Woodcutting</title>
+  <title>Tales of Aradia: Idle RPG</title>
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Segoe UI',sans-serif;background:#121212;color:#ddd}
-    .container{display:flex;height:100vh}
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #121212; color: #ddd; }
+    .container {display: flex;min-height: 100vh;height: 100vh;width: 100vw;overflow: hidden;}
+    body.login-screen {background: url("images/bg-login.png") no-repeat center center fixed;background-size: cover;}
+    #login-panel {position: absolute;top: 50%; left: 50%;transform: translate(-50%, -50%);background: rgba(31,31,31,0.85);padding: 20px;border-radius: 6px;width: 260px;box-shadow: 0 0 10px rgba(0,0,0,0.7);}
+    #login-panel h1 { color: #fff; text-align: center; margin-bottom: 12px; }
+    #login-panel input {width: 100%; padding: 10px; margin: 6px 0;border: none; border-radius: 4px;}
+    #login-panel .controls {display: flex; gap: 8px; margin: 12px 0;}
+    #login-panel .controls button {flex: 1; padding: 10px; border: none;border-radius: 4px; background: #3a7bd5; color: #fff;cursor: pointer;}
+    #login-msg { color: #f88; text-align: center; margin-top: 6px;}
+    #loading-screen {display: none;position: absolute; top: 0; left: 0;width: 100%; height: 100%;background: rgba(0,0,0,0.8);color: #fff; font-size: 1.2rem;display: flex; align-items: center; justify-content: center;flex-direction: column;z-index: 9;}
+    #loading-screen .spinner { display: none !important; }
 
-    /* LOGIN */
-    #login-panel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#1f1f1f;padding:20px;border-radius:6px;width:260px;box-shadow:0 0 10px rgba(0,0,0,0.7)}
-    #login-panel h1{color:#fff;text-align:center;margin-bottom:12px}
-    #login-panel input{width:100%;padding:10px;margin:6px 0;border:none;border-radius:4px}
-    #login-panel .controls{display:flex;gap:8px;margin:12px 0}
-    #login-panel .controls button{flex:1;padding:10px;border:none;border-radius:4px;background:#3a7bd5;color:#fff;cursor:pointer}
-    #login-msg{color:#f88;text-align:center;margin-top:6px}
+    .sidebar {width: 300px;min-width: 220px;max-width: 350px;background: #1f1f1f;border-right: 1px solid #333;padding: 20px 0 20px 0;display: flex;flex-direction: column;align-items: center;height: 100vh;box-sizing: border-box;overflow-y: auto;overflow-x: hidden;}
+    .sidebar h2 { color: #ccc; text-align: center; margin-bottom: 10px; }
+    .profile { width: 90%; margin-bottom: 16px; }
+    .profile-pic { width: 64px; height: 64px; border-radius: 100px; margin: 0 auto 8px auto; display: block;}
+    .profile-name, .profile-id, .last-active, .gold-balance { text-align: center; font-size: 0.95em; color: #ddd; margin-bottom: 2px;}
+    .skill-list { list-style: none; width: 90%; }
+    .skill-list li { display: flex; align-items: center; padding: 10px; cursor: pointer; transition: background .2s; border-radius: 4px;}
+    .skill-list li.active, .skill-list li:hover { background: #2a2a2a; }
+    .skill-list img { width: 32px; height: 32px; margin-right: 8px; }
+    #inventory, #leaderboard, #shop { width: 90%; margin: 0 auto 20px auto; }
+    #inventory h3, #leaderboard h3, #shop h3 { color: #ccc; font-size: 1rem; border-bottom: 1px solid #444; padding-bottom: 4px; margin-bottom: 8px; }
+    .inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 8px; width: 100%; }
+    .inv-card { background: #232323; border-radius: 4px; box-shadow: 0 2px 6px #000a; padding: 8px; display: flex; flex-direction: column; align-items: center; font-size: .82rem; text-align:center;}
+    .inv-card img { width: 32px; height: 32px; object-fit: contain; margin-bottom: 2px; filter: drop-shadow(0 1px 2px #0007); }
+    .leader-list { list-style: none; padding-left: 0; }
+    .leader-list li { padding: 6px 0; border-bottom: 1px solid #333; color: #ddd; font-size: .9rem; }
+    #shop h3 { display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; }
+    #shop h3 .arrow { transition: transform 0.2s ease; }
+    #shop.collapsed #shop-grid { display: none; }
+    #shop.collapsed h3 .arrow { transform: rotate(-90deg); }
+    #shop h4 { color: #ccc; font-size: 1rem; margin: 12px 0 4px 16px; padding-bottom: 4px; border-bottom: 1px solid #444; }
+    .shop-filters { display: flex; justify-content: center; gap: 8px; margin: 8px 0; }
+    .shop-filters button { padding: 4px 8px; border: none; border-radius: 4px; background: #2a2a2a; color: #fff; cursor: pointer; font-size: .85rem; white-space:nowrap;}
+    .shop-filters button.active { background: #3a7bd5; }
 
-    /* Sidebar */
-    .sidebar{width:300px;background:#1f1f1f;border-right:1px solid #333;padding:20px;display:flex;flex-direction:column;align-items:center;}
-    .sidebar h2{color:#ccc;text-align:center;margin-bottom:10px}
-    .skill-list{list-style:none;width:100%}
-    .skill-list li{display:flex;align-items:center;padding:10px;cursor:pointer;transition:background .2s}
-    .skill-list li.active,.skill-list li:hover{background:#2a2a2a}
-    .skill-list img{width:32px;height:32px;margin-right:8px}
-    #inventory,#leaderboard,#shop{width:100%;padding:0 16px;margin-bottom:20px}
-    #inventory h3,#leaderboard h3,#shop h3{color:#ccc;font-size:1rem;border-bottom:1px solid #444;padding-bottom:4px;margin-bottom:8px}
-    .inv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:12px;margin-top:12px}
-    .inv-card{background:#232323;border-radius:4px;box-shadow:0 2px 6px #000a;padding:8px;display:flex;flex-direction:column;align-items:center;font-size:.85rem}
-    .inv-card img{width:32px;height:32px;object-fit:contain;margin-bottom:2px;filter:drop-shadow(0 1px 2px #0007)}
-    .leader-list{list-style:none;padding-left:0}
-    .leader-list li{padding:6px 0;border-bottom:1px solid #333;color:#ddd;font-size:.9rem}
-    #shop h3 {display: flex;justify-content: space-between;align-items: center;cursor: pointer;user-select: none;}
-    #shop h3 .arrow {transition: transform 0.2s ease;}
-    #shop.collapsed #shop-grid {display: none;}
-    #shop.collapsed h3 .arrow {transform: rotate(-90deg);}
-    #shop h4 {color: #ccc;font-size: 1rem;margin: 12px 0 4px 16px;padding-bottom: 4px;border-bottom: 1px solid #444;}
-    .shop-filters {display: flex;justify-content: center;gap: 8px;margin: 8px 0;}
-    .shop-filters button {padding: 4px 8px;border: none;border-radius: 4px;background: #2a2a2a;color: #fff;cursor: pointer;font-size: .85rem;}
-    .shop-filters button.active {background: #3a7bd5;}
-
-    /* Equipment Panel */
     .equipment-panel {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      display: grid; grid-template-columns: repeat(3, 1fr);
       grid-template-areas:
         "ammo head cape"
         "weapon body shield"
         "ring legs ring2"
         ".    boots    .";
-      grid-gap: 12px;
-      background: #3a3a3a url('chain-bg.png') center/cover no-repeat;
-      padding: 8px;
-      border: 2px solid #000;
-      border-radius: 4px;
-      width: 100%;
-      box-sizing: border-box;
-      margin-bottom: 16px;
-    }
-    .slot{position:relative;width:40px;height:40px;background:#2e2e2e url('slot-bg.png') center/contain no-repeat;border:2px solid #000;box-shadow: inset 0 0 4px #000;}
-    .slot img{width:100%;height:100%;object-fit:contain;}
-    .slot-label{position:absolute;bottom:-14px;width:100%;text-align:center;font-size:0.65rem;color:#aaa}
-    .ammo{grid-area:ammo;}.head{grid-area:head;}.cape{grid-area:cape;}
-    .weapon{grid-area:weapon;}.body{grid-area:body;}.shield{grid-area:shield;}
-    .ring{grid-area:ring;}.legs{grid-area:legs;}.ring2{grid-area:ring2;}.boots{grid-area:boots;}
+      grid-gap: 12px;background: #3a3a3a url('chain-bg.png') center/cover no-repeat;padding: 8px; border: 2px solid #000;border-radius: 4px; width: 100%; box-sizing: border-box;margin-bottom: 16px;justify-items:center;}
+    .slot { position: relative; width: 40px; height: 40px; background: #2e2e2e url('slot-bg.png') center/contain no-repeat; border: 2px solid #000; box-shadow: inset 0 0 4px #000; }
+    .slot img { width: 100%; height: 100%; object-fit: contain; }
+    .slot-label { position: absolute; bottom: -14px; width: 100%; text-align: center; font-size: 0.65rem; color: #aaa; }
+    .ammo { grid-area: ammo; } .head { grid-area: head; } .cape { grid-area: cape; }
+    .weapon { grid-area: weapon; } .body { grid-area: body; } .shield { grid-area: shield; }
+    .ring { grid-area: ring; } .legs { grid-area: legs; } .ring2 { grid-area: ring2; } .boots { grid-area: boots; }
 
-    /* Main */
-    .main{flex:1;display:flex;flex-direction:column;padding:20px}
-    .main-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px}
-    .main-header h1{font-size:1.5rem;color:#fff}
-    .stats{font-size:.9rem;color:#aaa;display:flex;gap:12px;align-items:center}
-    .stats .hp{color:#f66}
-
-    /* Buttons */
-    #stop-btn, #resume-btn {padding:6px 12px;border:none;border-radius:4px;cursor:pointer;background:#d9534f;color:#fff;font-size:.85rem;}
-    #resume-btn {background:#5cb85c;}
-
-    /* Progress Bar */
-    #progress-container{width:100%;height:8px;background:#333;border-radius:4px;overflow:hidden;margin-bottom:8px}
-    #progress-bar{width:0%;height:100%;background:#4caf50;transition:width 0s}
-    #progress-text{text-align:center;color:#aaa;margin-bottom:16px;height:1.2em}
-
-    /* Tree Grid */
-    .tree-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;flex:1;overflow-y:auto}
-    .tree-card{position:relative;background:#1e1e1e;border:1px solid #333;border-radius:4px;display:flex;flex-direction:column;align-items:center;padding-bottom:8px;transition:transform .2s,border-color .2s}
-    .tree-card:hover{transform:translateY(-4px);border-color:#555}
-    .tree-card img{height:120px;width:auto;max-width:100%;object-fit:contain;background:#1e1e1e;margin-top:8px}
-    .label{padding:8px;background:#2a2a2a;color:#fff;text-align:center;font-size:.9rem;width:100%}
-    .tree-card button{margin:8px;padding:8px;width:80%;border:none;background:#3a7bd5;color:#fff;cursor:pointer;font-size:.9rem;border-radius:3px}
-    .tree-card button:disabled{background:#555;cursor:not-allowed}
-    .lock{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;color:#f66;font-size:1.1rem}
-    .health-bar{width:100%;height:6px;background:#333;border-radius:3px;overflow:hidden;margin-top:4px;}
-    .health-bar-inner{height:100%;background:#f44336;width:100%;transition:width .3s;}
+    .main {flex: 1 1 0;min-width: 0;overflow-x: auto;display: flex;flex-direction: column;padding: 20px;}
+    .main-header { display: flex; flex-wrap:wrap; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 12px; }
+    .main-header h1 { font-size: 1.5rem; color: #fff; }
+    .stats { font-size: .9rem; color: #ffffff; display: flex; gap: 12px; align-items: center; flex-wrap:wrap;}
+    .stats .hp { color: #f66; }
+    #stop-btn, #resume-btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; background: #d9534f; color: #fff; font-size: .85rem; }
+    #resume-btn { background: #5cb85c; }
+    #progress-container { width: 100%; height: 8px; background: #333; border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
+    #progress-bar { width: 0%; height: 100%; background: #4caf50; transition: width 0s; }
+    #progress-text { text-align: center; color: #aaa; margin-bottom: 16px; height: 1.2em; }
+    .tree-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; flex: 1; overflow-y: auto; min-height:120px;}
+    .tree-card { position: relative; background: #1e1e1e; border: 1px solid #333; border-radius: 4px; display: flex; flex-direction: column; align-items: center; padding-bottom: 8px; transition: transform .2s, border-color .2s; }
+    .tree-card:hover { transform: translateY(-4px); border-color: #555; }
+    .tree-card img { height: 120px; width: auto; max-width: 100%; object-fit: contain; background: #1e1e1e; margin-top: 8px; }
+    .label { padding: 8px; background: #2a2a2a; color: #fff; text-align: center; font-size: .9rem; width: 100%; }
+    .tree-card button { margin: 8px; padding: 8px; width: 80%; border: none; background: #3a7bd5; color: #fff; cursor: pointer; font-size: .9rem; border-radius: 3px; }
+    .tree-card button:disabled { background: #555; cursor: not-allowed; }
+    .lock { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; color: #f66; font-size: 1.1rem; }
+    .health-bar { width: 100%; height: 6px; background: #333; border-radius: 3px; overflow: hidden; margin-top: 4px; }
+    .health-bar-inner { height: 100%; background: #f44336; width: 100%; transition: width .3s; }
+    .tree-card {border-color: #b79f1c;box-shadow: 0 0 8px #b79f1c;}
+    .tree-card:hover {transform: translateY(-4px);border-color: #b79f1c;box-shadow: 0 0 12px #b79f1c, 0 2px 6px rgba(0,0,0,0.6);}
+    .tree-card.active {border-color: #30d549;box-shadow: 0 0 8px #30d549;}
+    #firemaking-header img {animation: campfire-flicker 0.8s infinite alternate;}
+    @keyframes campfire-flicker {
+      0%   { filter: drop-shadow(0 4px 18px #ffb32099);}
+      100% { filter: drop-shadow(0 10px 28px #ff940055);}}
   </style>
+</style>
 </head>
 <body>
+<body class="login-screen">
   <audio id="chop-sound" src="sounds/chop.wav" preload="auto"></audio>
-
+  
   <!-- LOGIN -->
   <div id="login-panel">
-    <h1>Login</h1>
+    <h1>Tales of Aradia</h1>
     <input id="username" placeholder="Username"/>
     <input id="password" type="password" placeholder="Password"/>
     <div class="controls">
@@ -112,35 +107,23 @@
   <!-- APP -->
   <div class="container" id="app" style="display:none;">
     <nav class="sidebar">
-      <h2>Skills</h2>
-      <ul class="skill-list"><li class="active"><img src="/icons/woodcutting/Lumbering.png"/><span>Woodcutting</span></li></ul>
-
-      <div id="inventory">
-        <h3>Inventory</h3>
-        <div id="inventory-grid" class="inv-grid"></div>
+      <h2>Welcome Traveler!</h2>
+      <div class="profile">
+        <img src="images/profile.png" alt="Profile Picture" class="profile-pic"/>
+        <div class="profile-name">—</div>
+        <div class="profile-id">PlayFab ID: <span id="playfab-id">—</span></div>
+        <div class="last-active">Last Active: <span id="last-active">—</span></div>
+        <div class="gold-balance">Gold: <span id="gold-count">0</span></div>
       </div>
-
-       <div id="shop">
-    <h3>
-      Shop
-      <span class="arrow">▼</span>
-    </h3>
-
-    <!-- filter controls -->
-    <div class="shop-filters">
-      <button data-filter="all" class="active">All</button>
-      <button data-filter="sell">Sell</button>
-      <button data-filter="buy">Buy</button>
-    </div>
-
-    <!-- sell grid -->
-    <div id="shop-grid" class="inv-grid"></div>
-
-    <!-- buy section -->
-    <h4>Buy Items</h4>
-    <div id="buy-grid" class="inv-grid"></div>
-  </div>
-
+      <h2>Skills</h2>
+      <ul class="skill-list">
+        <li class="active" data-skill="woodcutting">
+          <img src="icons/woodcutting/Lumbering.png"/><span>Woodcutting</span>
+        </li>
+        <li data-skill="firemaking">
+          <img src="icons/firemaking/Firemaking.png"/><span>Firemaking</span>
+        </li>
+      </ul>
       <div class="equipment-panel">
         <div class="slot head"><div class="slot-label">Helm</div></div>
         <div class="slot cape"><div class="slot-label">Cape</div></div>
@@ -153,15 +136,28 @@
         <div class="slot ring"><div class="slot-label">Ring</div></div>
         <div class="slot ring2"><div class="slot-label">Ring</div></div>
       </div>
-
-      <div id="leaderboard">
-        <h3>Leaderboard</h3>
-        <ul id="leader-list" class="leader-list"></ul>
+      <div id="inventory">
+        <h3>Inventory</h3>
+        <div id="inventory-grid" class="inv-grid"></div>
       </div>
+      <div id="shop">
+        <h3>Shop <span class="arrow">▼</span></h3>
+        <div class="shop-filters">
+          <button data-filter="all" class="active">All</button>
+          <button data-filter="sell">Sell</button>
+          <button data-filter="buy">Buy</button>
+        </div>
+        <div id="shop-grid" class="inv-grid"></div>
+        <h4 id="buy-header">Buy Items</h4>
+        <div id="buy-grid" class="inv-grid"></div>
+      </div>
+      
     </nav>
 
+    <!-- MAIN CONTENT -->
     <section class="main">
-      <div class="main-header">
+      <!-- Woodcutting header -->
+      <div id="woodcutting-header" class="main-header">
         <h1>Woodcutting</h1>
         <div class="stats">
           Level <span id="wc-level">1</span> |
@@ -173,24 +169,81 @@
           <button id="resume-btn">Resume</button>
         </div>
       </div>
+
+      <!-- Firemaking header -->
+      <div id="firemaking-header" style="display:none; flex-direction:column; align-items:center; gap:20px;">
+        <h1>Firemaking</h1>
+        <div style="display:flex; gap:30px; justify-content:center; align-items:center; flex-wrap:wrap;">
+          <!-- Stats Panel -->
+          <div id="firemaking-stats" style="background:#232323; border-radius:8px; padding:18px 24px; box-shadow:0 2px 8px #0005; min-width:210px;">
+            <div>Level <span id="fm-level">1</span></div>
+            <div>Fires <span id="fire-count">0</span></div>
+            <div>XP <span id="fm-xp">0</span>/<span id="fm-next">0</span></div>
+            <div>Gold <span id="gold-count-fm">0</span></div>
+          </div>
+
+          <!-- Fire Image + Dropdown -->
+          <div style="display:flex; flex-direction:column; align-items:center;">
+            <img src="campfire.png" alt="Campfire" style="width:170px; height:auto; margin-bottom:18px; filter:drop-shadow(0 6px 24px #ffb32080);">
+            <select id="firemaking-log-select" style="font-size:1rem; padding:7px 16px; border-radius:5px; border:none; background:#232323; color:#fff; margin-bottom:12px; box-shadow:0 1px 3px #0008;">
+            </select>
+            <button id="light-fire-btn" style="font-size:1.1rem; padding:8px 38px; border-radius:5px; border:none; background:#e25822; color:#fff; cursor:pointer; font-weight:bold; box-shadow:0 2px 8px #0005;">Light Fire</button>
+            <div id="fm-progress-container" style="width:180px; height:8px; background:#444; border-radius:4px; margin-top:12px; overflow:hidden; display:none;">
+              <div id="fm-progress-bar" style="width:0%; height:100%; background:#ffa600; transition:width .2s;"></div>
+            </div>
+            <div id="fm-progress-text" style="color:#ccc; margin-top:8px; min-height:20px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Only ONE progress bar and tree grid -->
       <div id="progress-container"><div id="progress-bar"></div></div>
       <div id="progress-text"></div>
       <div id="tree-grid" class="tree-grid"></div>
     </section>
   </div>
+  </div>
 
   <script>
+  // — LOGIN HANDLER (with background removal) —
+  async function auth(isLogin) {
+    const u = document.getElementById('username').value;
+    const p = document.getElementById('password').value;
+    let payload = { Username: u, Password: p };
+    if (!isLogin) {
+      payload.DisplayName = u;
+      payload.RequireBothUsernameAndEmail = false;
+      payload.Email = `${u}@example.com`;
+    }
+    try {
+      const r = await playfabCall(
+        isLogin ? 'LoginWithPlayFab' : 'RegisterPlayFabUser',
+        payload
+      );
+      sessionTicket = r.SessionTicket;
+      playFabId     = r.PlayFabId;
+      document.getElementById('login-panel').style.display = 'none';
+      document.getElementById('app').style.display         = '';
+      document.body.classList.remove('login-screen');
+      initGame();
+    } catch (e) {
+      document.getElementById('login-msg').textContent = e.errorMessage || JSON.stringify(e);
+    }
+  }
+  document.getElementById('login-btn').onclick = () => auth(true);
+  document.getElementById('reg-btn').onclick   = () => auth(false);
+
   // — CONFIG & STATE —
-  const TITLE_ID = "1C6B29", MAX_LEVEL = 99;
+  const TITLE_ID = "XXXXXX", MAX_LEVEL = 99;
   const XP_TABLE = [];
   (function(){
     let cum = 0;
-    for(let lvl = 1; lvl <= MAX_LEVEL; lvl++){
+    for (let lvl = 1; lvl <= MAX_LEVEL; lvl++) {
       cum += Math.floor(lvl + 300 * Math.pow(2, lvl/7));
-      XP_TABLE[lvl] = Math.floor(cum / 4);
+      XP_TABLE[lvl] = Math.floor(cum/4);
     }
   })();
-  function nextXpFor(l){ return l < MAX_LEVEL ? XP_TABLE[l+1] - XP_TABLE[l] : Infinity; }
+  function nextXpFor(l) { return l < MAX_LEVEL ? XP_TABLE[l+1] - XP_TABLE[l] : Infinity; }
 
   // prices for selling
   const PRICES = {
@@ -203,10 +256,14 @@
 
   // items you can buy
   const BUYABLES = [
-    { name:"Iron Axe",     cost:50,  slot:"weapon", img: "/icons/woodcutting/Iron_Axe.png" },
-    { name:"Steel Axe",    cost:100, slot:"weapon", img: "/icons/woodcutting/Steel_Axe.png" },
-    { name:"Silver Axe",   cost:200, slot:"weapon", img: "/icons/woodcutting/Silver_Axe.png" },
-    { name:"Golden Gloves",cost:150, slot:"gloves", img: "/icons/woodcutting/Golden_Gloves.png" }
+    { name:"Iron Axe",     cost:50,  slot:"weapon", img: "icons/woodcutting/Iron_Axe.png" },
+    { name:"Steel Axe",    cost:100, slot:"weapon", img: "icons/woodcutting/Steel_Axe.png" },
+    { name:"Woodcutting Hood",cost:150, slot:"head", img: "icons/woodcutting/Woodcutting_Hood.png" },
+    { name:"Woodcutting Top",cost:150, slot:"body", img: "icons/woodcutting/Woodcutting_Top.png" },
+    { name:"Woodcutting Legs",cost:150, slot:"legs", img: "icons/woodcutting/Woodcutting_Legs.png" },
+    { name:"Woodcutting Boots",cost:150, slot:"boots", img: "icons/woodcutting/Woodcutting_Boots.png" },
+    { name:"Amulet of Nature",cost:150, slot:"neck", img: "icons/woodcutting/Amulet_of_Nature.png" },
+    { name:"Woodcutting Gloves",cost:150, slot:"ring", img: "icons/woodcutting/Woodcutting_Gloves.png" }
   ];
 
   let sessionTicket, playFabId;
@@ -221,17 +278,30 @@
       "Japanese Maple Logs":0, "Sycamore Maple Logs":0, "Gigantic Oak Logs":0,
       "Palm Logs":0, "Pitch Pine Logs":0, "Eastern Redwood Logs":0, "Bird Nests":0
     },
-    equipment:{ weapon:null, gloves:null },
+  equipment: {
+    head:   null,
+    cape:   null,
+    neck:   null,
+    weapon: null,
+    body:   null,
+    shield: null,
+    legs:   null,
+    boots:  null,
+    ring:   null,
+    ring2:  null
+  },
     inCombat:false, monsterHP:0, monsterMaxHP:0,
     lastActive:Date.now()
   };
 
-  const ICON_PATH = "/icons/woodcutting/";
+  const ICON_PATH = "icons/woodcutting/";
   const TREES = [
     {lvl:1,  img:ICON_PATH+'Tree_Level1.png',       name:'Tree',              xp:25,  itemKey:'Logs'},
     {lvl:10, img:ICON_PATH+'Tree_Oak.png',          name:'Oak',               xp:37.5,itemKey:'Oak Logs'},
+    {lvl:20, img:ICON_PATH+'Tree_Birch.png',        name:'Birch',             xp:50,  itemKey:'Birch Logs'},
     {lvl:30, img:ICON_PATH+'Tree_Willow.png',       name:'Willow',            xp:67.5,itemKey:'Willow Logs'},
     {lvl:40, img:ICON_PATH+'Tree_Sakura.png',       name:'Sakura',            xp:80,  itemKey:'Sakura Logs'},
+    {lvl:50, img:ICON_PATH+'Tree_Japanese_Maple.png', name:'Japanese Maple', xp:100, itemKey:'Japanese Maple Logs'},
     {lvl:60, img:ICON_PATH+'Tree_Maple.png',        name:'Sycamore Maple',    xp:175, itemKey:'Sycamore Maple Logs'},
     {lvl:70, img:ICON_PATH+'Tree_Gigantic_Oak.png', name:'Gigantic Oak',      xp:200, itemKey:'Gigantic Oak Logs'},
     {lvl:80, img:ICON_PATH+'Tree_Palm.png',         name:'Palm',              xp:250, itemKey:'Palm Logs'},
@@ -239,7 +309,25 @@
     {lvl:95, img:ICON_PATH+'Tree_Gigantic.png',     name:'Eastern Redwood',   xp:420, itemKey:'Eastern Redwood Logs'},
     {lvl:99, img:ICON_PATH+'Tree_Legendary.png',    name:'Aradias Legendary', xp:480, itemKey:'Bird Nests'}
   ];
+  window.TREES = TREES;
 
+  const FIREMAKING_ICON_PATH = "icons/firemaking/";
+const FIRES = [
+  { lvl:1, img:FIREMAKING_ICON_PATH+'Logs.png', name:'Normal Logs', xp:30 },
+  { lvl:10,img:FIREMAKING_ICON_PATH+'Oak_Logs.png',    name:'Oak Logs', xp:60 },
+  { lvl:20,img:FIREMAKING_ICON_PATH+'Birch_Logs.png',  name:'Birch Logs', xp:75 },
+  { lvl:30,img:FIREMAKING_ICON_PATH+'Willow_Logs.png', name:'Willow Logs', xp:90 },
+  { lvl:40,img:FIREMAKING_ICON_PATH+'Sakura_Logs.png', name:'Sakura Logs', xp:120 },
+  { lvl:50,img:FIREMAKING_ICON_PATH+'Japanese_Maple_Logs.png', name:'Japanese Maple Logs', xp:105 },
+  { lvl:60,img:FIREMAKING_ICON_PATH+'Sycamore_Maple_Logs.png', name:'Sycamore Maple Logs', xp:135 },
+  { lvl:70,img:FIREMAKING_ICON_PATH+'Gigantic_Oak_Logs.png', name:'Gigantic Oak Logs', xp:150 },
+  { lvl:75,img:FIREMAKING_ICON_PATH+'Palm_Logs.png',    name:'Palm Logs', xp:165 },
+  { lvl:80,img:FIREMAKING_ICON_PATH+'Pitch_Pine_Logs.png', name:'Pitch Pine Logs', xp:180 },
+  { lvl:85,img:FIREMAKING_ICON_PATH+'Eastern_Redwood_Logs.png', name:'Eastern Redwood Logs', xp:195 },
+  { lvl:90,img:FIREMAKING_ICON_PATH+'Legendary_Logs.png', name:'Aradias Legendary Logs', xp:210 },
+];
+
+state.firemaking = { level:1, xp:0, fires:0 };
   // — PLAYFAB HELPER & AUTH —
   async function playfabCall(ep, payload){
     const headers = {'Content-Type':'application/json','X-ReportErrorAsSuccess':'true'};
@@ -354,16 +442,26 @@
     });
   }
 
-  function renderEquipment(){
-    const w = document.querySelector('.slot.weapon');
-    w.innerHTML = state.equipment.weapon
-      ? `<img src="${ICON_PATH}${state.equipment.weapon.replace(/ /g,'_')}.png"><div class="slot-label">${state.equipment.weapon}</div>`
-      : `<div class="slot-label">Weapon</div>`;
-    const g = document.querySelector('.slot.body');
-    g.innerHTML = state.equipment.gloves
-      ? `<img src="${ICON_PATH}${state.equipment.gloves.replace(/ /g,'_')}.png"><div class="slot-label">${state.equipment.gloves}</div>`
-      : `<div class="slot-label">Gloves</div>`;
+  function renderEquipment() {
+  // for each equipment slot in state.equipment…
+  for (const [slot, itemName] of Object.entries(state.equipment)) {
+    // find the matching .slot.<slot> element
+    const el = document.querySelector(`.slot.${slot}`);
+    if (!el) continue;
+
+    // if we have an item equipped, draw its icon + label…
+    if (itemName) {
+      el.innerHTML = `
+        <img src="${ICON_PATH}${itemName.replace(/ /g,'_')}.png" onerror="this.style.opacity=0.5">
+        <div class="slot-label">${itemName}</div>
+      `;
+    } else {
+      // otherwise keep the default label
+      const label = el.querySelector('.slot-label')?.textContent || slot;
+      el.innerHTML = `<div class="slot-label">${label}</div>`;
+    }
   }
+}
 
   function renderGrid(){
     document.getElementById('wc-level').textContent    = state.level;
@@ -401,34 +499,41 @@
       grid.appendChild(card);
     });
 
-    if(state.level>=2){
-      const c=document.createElement('div'); c.className='tree-card';
-      c.innerHTML=`
-        <div class="label">Goblin (Lv 2)</div>
-        <button id="combat-btn">Attack Goblin</button>
-        <div id="combat-info" style="font-size:.8rem;padding:4px;color:#ddd"></div>
-        <div class="health-bar"><div id="monster-hp-bar" class="health-bar-inner"></div></div>
-      `;
-      grid.appendChild(c);
-      const info=c.querySelector('#combat-info'), hp=c.querySelector('#monster-hp-bar'), atk=c.querySelector('#combat-btn');
-      function resetMonster(){ state.monsterMaxHP=50; state.monsterHP=50; state.inCombat=true; info.textContent='A Goblin appears!'; hp.style.width='100%'; }
-      atk.onclick=async()=>{
-        if(!state.inCombat) resetMonster();
-        const pd=Math.floor(Math.random()*6)+5; state.monsterHP=Math.max(0,state.monsterHP-pd);
-        info.textContent=`You hit Goblin for ${pd}! `; hp.style.width=`${(state.monsterHP/state.monsterMaxHP)*100}%`;
-        if(state.monsterHP>0){ const md=Math.floor(Math.random()*5)+1; state.health=Math.max(0,state.health-md); info.textContent+=`Goblin hits you for ${md}!`; }
-        if(state.monsterHP<=0){
-          info.textContent='You defeated the Goblin! +20 XP'; state.xp+=20; state.inCombat=false;
-          while(state.level<MAX_LEVEL&&state.xp>=XP_TABLE[state.level+1]) state.level++;
-          await saveState(); setTimeout(renderGrid,500);
-        }
-        if(state.health<=0){ info.textContent='You were defeated! Reload to recover.'; atk.disabled=true; }
-        document.getElementById('player-hp').textContent=state.health;
-      };
-    }
-
     renderInventory();
   }
+
+  function renderFiremakingGrid(){
+  document.getElementById('fm-level').textContent = state.firemaking.level;
+  document.getElementById('fire-count').textContent = state.firemaking.fires;
+  document.getElementById('fm-xp').textContent = state.firemaking.xp.toFixed(1);
+  document.getElementById('fm-next').textContent = state.firemaking.level<MAX_LEVEL?nextXpFor(state.firemaking.level).toFixed(1):'—';
+  document.getElementById('gold-count-fm').textContent = state.gold;
+
+  const grid = document.getElementById('fire-grid'); grid.innerHTML = '';
+  FIRES.forEach(f=>{
+    const card = document.createElement('div'); card.className='tree-card';
+    card.innerHTML=`
+      <img src="${f.img}" alt="${f.name}">
+      <div class="label">${f.name} (Lv ${f.lvl})</div>
+      <button ${state.firemaking.level<f.lvl?'disabled':''}>Light</button>
+      ${state.firemaking.level<f.lvl?`<div class="lock">Unlock at ${f.lvl}</div>`:''}
+    `;
+    card.querySelector('button').onclick = async ()=>{
+      document.getElementById('progress-text').textContent=`Lighting ${f.name}...`;
+      const bar = document.getElementById('progress-bar');
+      bar.style.transition='width .3s'; bar.style.width='100%';
+      state.firemaking.fires++;
+      state.firemaking.xp += f.xp;
+      while(state.firemaking.level<MAX_LEVEL && state.firemaking.xp>=XP_TABLE[state.firemaking.level+1]) state.firemaking.level++;
+      await saveState(); renderFiremakingGrid();
+      setTimeout(()=>{
+        bar.style.transition='width 0s'; bar.style.width='0%';
+        document.getElementById('progress-text').textContent='';
+      },300);
+    };
+    grid.appendChild(card);
+  });
+}
 
   // — LEADERBOARD —
   async function refreshLeaderboard(){
@@ -455,16 +560,18 @@
   resumeBtn.style.display='none';
 
   // — SHOP FILTERS & COLLAPSE —
-  const shopPanel  = document.getElementById('shop');
-  shopPanel.querySelector('h3').onclick = ()=> shopPanel.classList.toggle('collapsed');
-  shopPanel.querySelector('.shop-filters').onclick = e=>{
-    if(!e.target.matches('button[data-filter]')) return;
-    shopPanel.querySelectorAll('.shop-filters button').forEach(b=>b.classList.remove('active'));
-    e.target.classList.add('active');
-    const m=e.target.dataset.filter;
-    document.getElementById('shop-grid').style.display = (m==='buy')?'none':'';
-    document.getElementById('buy-grid').style.display  = (m==='sell')?'none':'';
-  };
+  const shopPanel = document.getElementById('shop');
+    shopPanel.querySelector('h3').onclick = () => shopPanel.classList.toggle('collapsed');
+    shopPanel.querySelector('.shop-filters').onclick = e => {
+  if(!e.target.matches('button[data-filter]')) return;
+  shopPanel.querySelectorAll('.shop-filters button').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+  const m = e.target.dataset.filter;
+
+  document.getElementById('shop-grid').style.display = (m === 'buy') ? 'none' : '';
+  document.getElementById('buy-grid').style.display  = (m === 'buy') ? '' : 'none';
+  document.getElementById('buy-header').style.display = (m === 'buy') ? '' : 'none'; // <-- THIS LINE
+};
 
   // — INITIALIZE —
   async function initGame(){
@@ -477,7 +584,20 @@
     refreshLeaderboard();
     schedule();
   }
-</script>
 
+document.querySelectorAll('.skill-list li').forEach(skill => {
+  skill.onclick = () => {
+    document.querySelectorAll('.skill-list li').forEach(li => li.classList.remove('active'));
+    skill.classList.add('active');
+    const skillName = skill.getAttribute('data-skill');
+    document.getElementById('woodcutting-header').style.display = skillName==='woodcutting'?'':'none';
+    document.getElementById('tree-grid').style.display = skillName==='woodcutting'?'':'none';
+    document.getElementById('firemaking-header').style.display  = skillName==='firemaking'?'flex':'none';
+    if(skillName==='woodcutting') renderGrid();
+    if(skillName==='firemaking') renderFiremakingUI();
+  };
+});
+</script>
+<script src="firemaking.js"></script>
 </body>
 </html>
