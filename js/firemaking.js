@@ -9,18 +9,18 @@
   // Generate FIRES data based on your trees
   const FIREMAKING_ICON_PATH = "icons/firemaking/";
   let FIRES = [
-    { lvl:1, img:FIREMAKING_ICON_PATH+'Logs.png', name:'Logs', xp:30 },
-    { lvl:10,img:FIREMAKING_ICON_PATH+'Oak_Logs.png',    name:'Oak Logs', xp:60 },
-    { lvl:20,img:FIREMAKING_ICON_PATH+'Birch_Logs.png',  name:'Birch Logs', xp:75 },
-    { lvl:30,img:FIREMAKING_ICON_PATH+'Willow_Logs.png', name:'Willow Logs', xp:90 },
-    { lvl:40,img:FIREMAKING_ICON_PATH+'Sakura_Logs.png', name:'Sakura Logs', xp:120 },
-    { lvl:50,img:FIREMAKING_ICON_PATH+'Japanese_Maple_Logs.png', name:'Japanese Maple Logs', xp:105 },
-    { lvl:60,img:FIREMAKING_ICON_PATH+'Sycamore_Maple_Logs.png', name:'Sycamore Maple Logs', xp:135 },
-    { lvl:70,img:FIREMAKING_ICON_PATH+'Gigantic_Oak_Logs.png', name:'Gigantic Oak Logs', xp:150 },
-    { lvl:75,img:FIREMAKING_ICON_PATH+'Palm_Logs.png',    name:'Palm Logs', xp:165 },
-    { lvl:80,img:FIREMAKING_ICON_PATH+'Pitch_Pine_Logs.png', name:'Pitch Pine Logs', xp:180 },
-    { lvl:85,img:FIREMAKING_ICON_PATH+'Eastern_Redwood_Logs.png', name:'Eastern Redwood Logs', xp:195 },
-    { lvl:90,img:FIREMAKING_ICON_PATH+'Legendary_Logs.png', name:'Aradias Legendary Logs', xp:210 },
+    { lvl:1,  xp:30,  name:'Logs', img:FIREMAKING_ICON_PATH+'Logs.png'},
+    { lvl:10, xp:60,  name:'Oak Logs',img:FIREMAKING_ICON_PATH+'Oak_Logs.png' },
+    { lvl:20, xp:75,  name:'Birch Logs',img:FIREMAKING_ICON_PATH+'Birch_Logs.png' },
+    { lvl:30, xp:90,  name:'Willow Logs',img:FIREMAKING_ICON_PATH+'Willow_Logs.png' },
+    { lvl:40, xp:120, name:'Sakura Logs',img:FIREMAKING_ICON_PATH+'Sakura_Logs.png' },
+    { lvl:50, xp:105, name:'Japanese Maple Logs',img:FIREMAKING_ICON_PATH+'Japanese_Maple_Logs.png' },
+    { lvl:60, xp:135, name:'Sycamore Maple Logs',img:FIREMAKING_ICON_PATH+'Sycamore_Maple_Logs.png' },
+    { lvl:70, xp:150, name:'Gigantic Oak Logs',img:FIREMAKING_ICON_PATH+'Gigantic_Oak_Logs.png' },
+    { lvl:75, xp:165, name:'Palm Logs',img:FIREMAKING_ICON_PATH+'Palm_Logs.png' },
+    { lvl:80, xp:180, name:'Pitch Pine Logs',img:FIREMAKING_ICON_PATH+'Pitch_Pine_Logs.png' },
+    { lvl:85, xp:195, name:'Eastern Redwood Logs',img:FIREMAKING_ICON_PATH+'Eastern_Redwood_Logs.png' },
+    { lvl:90, xp:210, name:'Aradias Legendary Logs',img:FIREMAKING_ICON_PATH+'Legendary_Logs.png' },
   ];
 
   // Main firemaking UI update function

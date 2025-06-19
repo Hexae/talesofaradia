@@ -259,30 +259,30 @@
 
     // prices for selling
     let PRICES = {
-        "Logs":1, 
-        "Birch Logs":2, 
-        "Oak Logs":5, 
-        "Willow Logs":8, 
-        "Sakura Logs":12,
-        "Japanese Maple Logs":20, 
-        "Sycamore Maple Logs":25,
-        "Gigantic Oak Logs":30, 
-        "Palm Logs":35,
-        "Pitch Pine Logs":40, 
-        "Eastern Redwood Logs":45,
-        "Bird Nests":200
+        1:"Logs", 
+        2:"Birch Logs", 
+        5:"Oak Logs", 
+        8:"Willow Logs", 
+        12:"Sakura Logs",
+        20:"Japanese Maple Logs", 
+        25:"Sycamore Maple Logs",
+        30:"Gigantic Oak Logs", 
+        35:"Palm Logs",
+        40:"Pitch Pine Logs", 
+        45:"Eastern Redwood Logs",
+        200:"Bird Nests"
     };
 
     // items you can buy
     let BUYABLES = [
-      { name:"Iron Axe", cost:50,  slot:"weapon", img: "icons/woodcutting/Iron_Axe.png" },
-      { name:"Steel Axe", cost:100, slot:"weapon", img: "icons/woodcutting/Steel_Axe.png" },
-      { name:"Woodcutting Hood",cost:150, slot:"head", img: "icons/woodcutting/Woodcutting_Hood.png" },
-      { name:"Woodcutting Top",cost:150, slot:"body", img: "icons/woodcutting/Woodcutting_Top.png" },
-      { name:"Woodcutting Legs",cost:150, slot:"legs", img: "icons/woodcutting/Woodcutting_Legs.png" },
-      { name:"Woodcutting Boots",cost:150, slot:"boots", img: "icons/woodcutting/Woodcutting_Boots.png" },
-      { name:"Amulet of Nature",cost:150, slot:"neck", img: "icons/woodcutting/Amulet_of_Nature.png" },
-      { name:"Woodcutting Gloves",cost:150, slot:"ring", img: "icons/woodcutting/Woodcutting_Gloves.png" }
+      { cost:50,  name:"Iron Axe",          slot:"weapon", img: "icons/woodcutting/Iron_Axe.png" },
+      { cost:100, name:"Steel Axe",         slot:"weapon", img: "icons/woodcutting/Steel_Axe.png" },
+      { cost:150, name:"Woodcutting Hood",  slot:"head",   img: "icons/woodcutting/Woodcutting_Hood.png" },
+      { cost:150, name:"Woodcutting Top",   slot:"body",   img: "icons/woodcutting/Woodcutting_Top.png" },
+      { cost:150, name:"Woodcutting Legs",  slot:"legs",   img: "icons/woodcutting/Woodcutting_Legs.png" },
+      { cost:150, name:"Woodcutting Boots", slot:"boots",  img: "icons/woodcutting/Woodcutting_Boots.png" },
+      { cost:150, name:"Amulet of Nature",  slot:"neck",   img: "icons/woodcutting/Amulet_of_Nature.png" },
+      { cost:150, name:"Woodcutting Gloves",slot:"ring",   img: "icons/woodcutting/Woodcutting_Gloves.png" }
     ];
 
     let sessionTicket, playFabId;
@@ -292,11 +292,7 @@
     let state = {
       level:1, xp:0, wood:0, gold:0,
       health:100, maxHealth:100,
-      inventory:{
-        Logs:0, "Birch Logs":0, "Oak Logs":0, "Willow Logs":0, "Sakura Logs":0,
-        "Japanese Maple Logs":0, "Sycamore Maple Logs":0, "Gigantic Oak Logs":0,
-        "Palm Logs":0, "Pitch Pine Logs":0, "Eastern Redwood Logs":0, "Bird Nests":0
-      },
+      inventory:{},
       equipment: {
         head:   null,
         cape:   null,
@@ -315,18 +311,18 @@
 
     const ICON_PATH = "icons/woodcutting/";
     let TREES = [
-      {lvl:1,  img:ICON_PATH+'Tree_Level1.png',       name:'Tree',              xp:25,  itemKey:'Logs'},
-      {lvl:10, img:ICON_PATH+'Tree_Oak.png',          name:'Oak',               xp:37.5,itemKey:'Oak Logs'},
-      {lvl:20, img:ICON_PATH+'Tree_Birch.png',        name:'Birch',             xp:50,  itemKey:'Birch Logs'},
-      {lvl:30, img:ICON_PATH+'Tree_Willow.png',       name:'Willow',            xp:67.5,itemKey:'Willow Logs'},
-      {lvl:40, img:ICON_PATH+'Tree_Sakura.png',       name:'Sakura',            xp:80,  itemKey:'Sakura Logs'},
-      {lvl:50, img:ICON_PATH+'Tree_Japanese_Maple.png', name:'Japanese Maple', xp:100, itemKey:'Japanese Maple Logs'},
-      {lvl:60, img:ICON_PATH+'Tree_Maple.png',        name:'Sycamore Maple',    xp:175, itemKey:'Sycamore Maple Logs'},
-      {lvl:70, img:ICON_PATH+'Tree_Gigantic_Oak.png', name:'Gigantic Oak',      xp:200, itemKey:'Gigantic Oak Logs'},
-      {lvl:80, img:ICON_PATH+'Tree_Palm.png',         name:'Palm',              xp:250, itemKey:'Palm Logs'},
-      {lvl:90, img:ICON_PATH+'Tree_Pine.png',         name:'Pitch Pine',        xp:380, itemKey:'Pitch Pine Logs'},
-      {lvl:95, img:ICON_PATH+'Tree_Gigantic.png',     name:'Eastern Redwood',   xp:420, itemKey:'Eastern Redwood Logs'},
-      {lvl:99, img:ICON_PATH+'Tree_Legendary.png',    name:'Aradias Legendary', xp:480, itemKey:'Bird Nests'}
+      {lvl:1,  xp:25,    name:'Tree',              itemKey:'Logs',                 img:ICON_PATH+'Tree_Level1.png'},
+      {lvl:10, xp:37.5,  name:'Oak',               itemKey:'Oak Logs',             img:ICON_PATH+'Tree_Oak.png'},
+      {lvl:20, xp:50,    name:'Birch',             itemKey:'Birch Logs',           img:ICON_PATH+'Tree_Birch.png'},
+      {lvl:30, xp:67.5,  name:'Willow',            itemKey:'Willow Logs',          img:ICON_PATH+'Tree_Willow.png'},
+      {lvl:40, xp:80,    name:'Sakura',            itemKey:'Sakura Logs',          img:ICON_PATH+'Tree_Sakura.png'},
+      {lvl:50, xp:100,   name:'Japanese Maple',    itemKey:'Japanese Maple Logs',  img:ICON_PATH+'Tree_Japanese_Maple.png'},
+      {lvl:60, xp:175,   name:'Sycamore Maple',    itemKey:'Sycamore Maple Logs',  img:ICON_PATH+'Tree_Maple.png'},
+      {lvl:70, xp:200,   name:'Gigantic Oak',      itemKey:'Gigantic Oak Logs',    img:ICON_PATH+'Tree_Gigantic_Oak.png'},
+      {lvl:80, xp:250,   name:'Palm',              itemKey:'Palm Logs',            img:ICON_PATH+'Tree_Palm.png'},
+      {lvl:90, xp:380,   name:'Pitch Pine',        itemKey:'Pitch Pine Logs',      img:ICON_PATH+'Tree_Pine.png'},
+      {lvl:95, xp:420,   name:'Eastern Redwood',   itemKey:'Eastern Redwood Logs', img:ICON_PATH+'Tree_Gigantic.png'},
+      {lvl:99, xp:480,   name:'Aradias Legendary', itemKey:'Bird Nests',           img:ICON_PATH+'Tree_Legendary.png'}
     ];
     window.TREES = TREES;
 
@@ -403,7 +399,7 @@
 
     function renderShop(){
       let grid = document.getElementById('shop-grid'); grid.innerHTML = '';
-      for(let [item,price] of Object.entries(PRICES)){
+      for(let [price,item] of Object.entries(PRICES)){
         let qty = state.inventory[item]||0;
         let card = document.createElement('div'); card.className='inv-card';
         card.innerHTML = `
