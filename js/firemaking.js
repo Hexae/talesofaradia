@@ -6,10 +6,22 @@
   const XP_TABLE = window.XP_TABLE;
   const state = window.state;
 
-  // Generate FIRES data based on your trees
-  const FIRES = TREES.map(t => ({
-    lvl: t.lvl, name: t.name, xp: t.xp * 0.5, img: t.img
-  }));
+// Generate FIRES data based on your trees
+const FIREMAKING_ICON_PATH = "icons/firemaking/";
+const FIRES = [
+  { lvl:1, img:FIREMAKING_ICON_PATH+'Logs.png', name:'Logs', xp:30 },
+  { lvl:10,img:FIREMAKING_ICON_PATH+'Oak_Logs.png',    name:'Oak Logs', xp:60 },
+  { lvl:20,img:FIREMAKING_ICON_PATH+'Birch_Logs.png',  name:'Birch Logs', xp:75 },
+  { lvl:30,img:FIREMAKING_ICON_PATH+'Willow_Logs.png', name:'Willow Logs', xp:90 },
+  { lvl:40,img:FIREMAKING_ICON_PATH+'Sakura_Logs.png', name:'Sakura Logs', xp:120 },
+  { lvl:50,img:FIREMAKING_ICON_PATH+'Japanese_Maple_Logs.png', name:'Japanese Maple Logs', xp:105 },
+  { lvl:60,img:FIREMAKING_ICON_PATH+'Sycamore_Maple_Logs.png', name:'Sycamore Maple Logs', xp:135 },
+  { lvl:70,img:FIREMAKING_ICON_PATH+'Gigantic_Oak_Logs.png', name:'Gigantic Oak Logs', xp:150 },
+  { lvl:75,img:FIREMAKING_ICON_PATH+'Palm_Logs.png',    name:'Palm Logs', xp:165 },
+  { lvl:80,img:FIREMAKING_ICON_PATH+'Pitch_Pine_Logs.png', name:'Pitch Pine Logs', xp:180 },
+  { lvl:85,img:FIREMAKING_ICON_PATH+'Eastern_Redwood_Logs.png', name:'Eastern Redwood Logs', xp:195 },
+  { lvl:90,img:FIREMAKING_ICON_PATH+'Legendary_Logs.png', name:'Aradias Legendary Logs', xp:210 },
+];
 
   // Main firemaking UI update function
   function renderFiremakingUI() {
@@ -72,6 +84,7 @@
     state.inventory[logName]--;
     state.firemaking.fires++;
     state.firemaking.xp += fire.xp;
+    showNotif(`You light a ${logName} (+${fire.xp} XP)`);
     while(state.firemaking.level < MAX_LEVEL && state.firemaking.xp >= XP_TABLE[state.firemaking.level+1]) state.firemaking.level++;
     await window.saveState();
     renderFiremakingUI();
