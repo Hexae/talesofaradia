@@ -104,6 +104,8 @@
     <p id="login-msg"></p>
   </div>
 
+  <div id="notif-bar" style="display:none;position:fixed;top:24px;left:50%;transform:translateX(-50%);background:rgba(60,60,60,0.95);color:#fff;padding:10px 28px;border-radius:8px;font-size:1.1rem;box-shadow:0 2px 10px #0008;z-index:99;pointer-events:none;transition: opacity .2s;"></div>
+ 
   <!-- APP -->
   <div class="container" id="app" style="display:none;">
     <nav class="sidebar">
@@ -234,7 +236,7 @@
   document.getElementById('reg-btn').onclick   = () => auth(false);
 
   // — CONFIG & STATE —
-  const TITLE_ID = "XXXXXX", MAX_LEVEL = 99;
+  const TITLE_ID = "XXXXX", MAX_LEVEL = 99;
   const XP_TABLE = [];
   (function(){
     let cum = 0;
@@ -244,6 +246,17 @@
     }
   })();
   function nextXpFor(l) { return l < MAX_LEVEL ? XP_TABLE[l+1] - XP_TABLE[l] : Infinity; }
+
+  function showNotif(msg, duration=1500) {
+    const bar = document.getElementById('notif-bar');
+    bar.textContent = msg;
+    bar.style.display = 'block';
+    bar.style.opacity = 1;
+    setTimeout(() => {
+      bar.style.opacity = 0;
+      setTimeout(() => { bar.style.display = 'none'; }, 350);
+    }, duration);
+  }
 
   // prices for selling
   const PRICES = {
@@ -310,22 +323,6 @@
     {lvl:99, img:ICON_PATH+'Tree_Legendary.png',    name:'Aradias Legendary', xp:480, itemKey:'Bird Nests'}
   ];
   window.TREES = TREES;
-
-  const FIREMAKING_ICON_PATH = "icons/firemaking/";
-const FIRES = [
-  { lvl:1, img:FIREMAKING_ICON_PATH+'Logs.png', name:'Normal Logs', xp:30 },
-  { lvl:10,img:FIREMAKING_ICON_PATH+'Oak_Logs.png',    name:'Oak Logs', xp:60 },
-  { lvl:20,img:FIREMAKING_ICON_PATH+'Birch_Logs.png',  name:'Birch Logs', xp:75 },
-  { lvl:30,img:FIREMAKING_ICON_PATH+'Willow_Logs.png', name:'Willow Logs', xp:90 },
-  { lvl:40,img:FIREMAKING_ICON_PATH+'Sakura_Logs.png', name:'Sakura Logs', xp:120 },
-  { lvl:50,img:FIREMAKING_ICON_PATH+'Japanese_Maple_Logs.png', name:'Japanese Maple Logs', xp:105 },
-  { lvl:60,img:FIREMAKING_ICON_PATH+'Sycamore_Maple_Logs.png', name:'Sycamore Maple Logs', xp:135 },
-  { lvl:70,img:FIREMAKING_ICON_PATH+'Gigantic_Oak_Logs.png', name:'Gigantic Oak Logs', xp:150 },
-  { lvl:75,img:FIREMAKING_ICON_PATH+'Palm_Logs.png',    name:'Palm Logs', xp:165 },
-  { lvl:80,img:FIREMAKING_ICON_PATH+'Pitch_Pine_Logs.png', name:'Pitch Pine Logs', xp:180 },
-  { lvl:85,img:FIREMAKING_ICON_PATH+'Eastern_Redwood_Logs.png', name:'Eastern Redwood Logs', xp:195 },
-  { lvl:90,img:FIREMAKING_ICON_PATH+'Legendary_Logs.png', name:'Aradias Legendary Logs', xp:210 },
-];
 
 state.firemaking = { level:1, xp:0, fires:0 };
   // — PLAYFAB HELPER & AUTH —
@@ -481,7 +478,7 @@ state.firemaking = { level:1, xp:0, fires:0 };
         ${state.level<t.lvl?`<div class="lock">Unlock at ${t.lvl}</div>`:''}
       `;
       const btn = card.querySelector('button');
-      btn.onclick = async ()=>{
+      btn.onclick = async ()=> {
         if(state.inCombat) return;
         document.getElementById('chop-sound').currentTime=0;
         document.getElementById('chop-sound').play();
@@ -489,6 +486,7 @@ state.firemaking = { level:1, xp:0, fires:0 };
         const bar = document.getElementById('progress-bar');
         bar.style.transition='width .3s'; bar.style.width='100%';
         state.wood++; state.inventory[t.itemKey]++; state.xp+=t.xp;
+        showNotif(`+1 ${t.itemKey} gathered!`); // <-- Add here
         while(state.level<MAX_LEVEL&&state.xp>=XP_TABLE[state.level+1]) state.level++;
         await saveState(); renderGrid();
         setTimeout(()=>{
@@ -551,7 +549,7 @@ state.firemaking = { level:1, xp:0, fires:0 };
   // — AUTO & CONTROLS —
   function getInterval(){ const min=2000,max=15000; return Math.min(max,min+(state.level-1)*(max-min)/(MAX_LEVEL-1)); }
   function animate(){ const pct=(Date.now()-(nextTick-interval))/interval; const bar=document.getElementById('progress-bar'); bar.style.transition='width 0s'; bar.style.width=`${Math.min(Math.max(pct,0),1)*100}%`; if(pct<1) requestAnimationFrame(animate); }
-  async function autoTick(){ if(!autoEnabled) return; if(state.inCombat){ timer=setTimeout(autoTick,1000); return;} const t=TREES.filter(t=>state.level>=t.lvl).pop(); document.getElementById('progress-text').textContent=`Chopping ${t.name}...`; state.wood++; state.inventory[t.itemKey]++; state.xp+=t.xp/2; while(state.level<MAX_LEVEL&&state.xp>=XP_TABLE[state.level+1]) state.level++; await saveState(); renderGrid(); schedule(); setTimeout(()=>{ const bar=document.getElementById('progress-bar'); bar.style.transition='width 0s'; bar.style.width='0%'; document.getElementById('progress-text').textContent=''; },interval); }
+  async function autoTick(){ if(!autoEnabled) return; if(state.inCombat){ timer=setTimeout(autoTick,1000); return;} const t=TREES.filter(t=>state.level>=t.lvl).pop(); document.getElementById('progress-text').textContent=`Chopping ${t.name}...`; state.wood++; state.inventory[t.itemKey]++; state.xp+=t.xp/2;showNotif(`+1 ${t.itemKey} gathered!`); while(state.level<MAX_LEVEL&&state.xp>=XP_TABLE[state.level+1]) state.level++; await saveState(); renderGrid(); schedule(); setTimeout(()=>{ const bar=document.getElementById('progress-bar'); bar.style.transition='width 0s'; bar.style.width='0%'; document.getElementById('progress-text').textContent=''; },interval); }
   function schedule(){ clearTimeout(timer); if(!autoEnabled) return; interval=getInterval(); nextTick=Date.now()+interval; animate(); timer=setTimeout(autoTick,interval); }
 
   const stopBtn = document.getElementById('stop-btn'), resumeBtn = document.getElementById('resume-btn');
