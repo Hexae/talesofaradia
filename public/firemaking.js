@@ -34,26 +34,27 @@
 
     // Fill dropdown with all unlocked/burnable logs
     let select = document.getElementById('firemaking-log-select');
-    select.innerHTML = '';
-    let hasUnlocked = false;
-    FIRES.forEach(fire => {
-      if (state.firemaking.level >= fire.lvl && (state.inventory[fire.name] || 0) > 0) {
-        hasUnlocked = true;
-        let opt = document.createElement('option');
-        opt.value = fire.name;
-        opt.textContent = `${fire.name} (XP: ${fire.xp}) — You have: ${state.inventory[fire.name]||0}`;
-        select.appendChild(opt);
-      }
-    });
-    if (!hasUnlocked) {
-      select.innerHTML = '<option disabled selected>No logs to burn</option>';
-      document.getElementById('light-fire-btn').disabled = true;
-    } else {
-      document.getElementById('light-fire-btn').disabled = false;
-    }
-    document.getElementById('fm-progress-container').style.display = "none";
-    document.getElementById('fm-progress-text').textContent = "";
+select.innerHTML = '';
+let hasUnlocked = false;
+
+FIRES.forEach(fire => {
+  const qty = state.inventory[fire.name] || 0;
+  if (state.firemaking.level >= fire.lvl && qty > 0) {
+    hasUnlocked = true;
+    let opt = document.createElement('option');
+    opt.value = fire.name;
+    opt.textContent = `${fire.name} (XP: ${fire.xp}) — You have: ${qty}`;
+    select.appendChild(opt);
   }
+});
+
+if (!hasUnlocked) {
+  select.innerHTML = '<option disabled selected>No logs to burn</option>';
+  document.getElementById('light-fire-btn').disabled = true;
+} else {
+  document.getElementById('light-fire-btn').disabled = false;
+}
+
 
   // Export to global scope
   window.renderFiremakingUI = renderFiremakingUI;
@@ -101,4 +102,5 @@
   if (document.querySelector('.skill-list li.active')?.dataset.skill === 'firemaking') {
     renderFiremakingUI();
   }
+}
 })();

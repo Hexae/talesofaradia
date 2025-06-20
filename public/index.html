@@ -137,13 +137,12 @@
     /* ----- End - Mobile (TEST) ------*/
 </style>
 </head>
-<body>
 <body class="login-screen">
   <audio id="chop-sound" src="sounds/chop.wav" preload="auto"></audio>
 
   <!-- LOGIN -->
   <div id="login-panel">
-    <img src="images/login_logo.png">
+    <img src="images/login_logo.png" alt="Login Logo">
     <input id="username" placeholder="Username"/>
     <input id="password" type="password" placeholder="Password"/>
     <div class="controls">
@@ -181,13 +180,13 @@
         <li data-skill="cooking">
           <img src="icons/cooking/Cooking.png"/><span>Cooking</span>
         </li>
-        <li data-skill="Mining">
+        <li data-skill="mining">
           <img src="icons/mining/Mining.png"/><span>Mining</span>
         </li>
         <li data-skill="smithing">
           <img src="icons/smithing/Smithing.png"/><span>Smithing</span>
         </li>
-        <li data-skill="Fletching">
+        <li data-skill="fletching">
           <img src="icons/fletching/Fletching.png"/><span>Fletching</span>
         </li>
       </ul>
@@ -283,7 +282,7 @@
         </div>
       </div>
 
-        <!-- Fishing -->
+      <!-- Fishing -->
       <div id="fishing-panel" class="panel" style="display:none;">
         <h1>Fishing</h1>
         <div class="stats">
@@ -310,92 +309,18 @@
   </div>
 
   <script>
-    // — LOGIN HANDLER (with background removal) —
-    async function auth(isLogin) {
-      const u = document.getElementById('username').value;
-      const p = document.getElementById('password').value;
-      let payload = { Username: u, Password: p };
-      if (!isLogin) {
-        payload.DisplayName = u;
-        payload.RequireBothUsernameAndEmail = false;
-        payload.Email = `${u}@example.com`;
-      }
-      try {
-        let r = await playfabCall(
-          isLogin ? 'LoginWithPlayFab' : 'RegisterPlayFabUser',
-          payload
-        );
-        sessionTicket = r.SessionTicket;
-        playFabId     = r.PlayFabId;
-        document.getElementById('login-panel').style.display = 'none';
-        document.getElementById('app').style.display         = '';
-        document.body.classList.remove('login-screen');
-        initGame();
-      } catch (e) {
-        document.getElementById('login-msg').textContent = e.errorMessage || JSON.stringify(e);
-      }
-    }
-    document.getElementById('login-btn').onclick = () => auth(true);
-    document.getElementById('reg-btn').onclick   = () => auth(false);
-
-    // — CONFIG & STATE —
-    let TITLE_ID = "1C6B29", MAX_LEVEL = 99, XP_TABLE = [];
-    (function(){
-      let cum = 0;
-      for (let lvl = 1; lvl <= MAX_LEVEL; lvl++) {
-        cum += Math.floor(lvl + 300 * Math.pow(2, lvl/7));
-        XP_TABLE[lvl] = Math.floor(cum/4);
-      }
-    })();
-    function nextXpFor(l) { return l < MAX_LEVEL ? XP_TABLE[l+1] - XP_TABLE[l] : Infinity; }
-
-    function showNotif(msg, duration=1500) {
-      let bar = document.getElementById('notif-bar');
-      bar.textContent = msg;
-      bar.style.display = 'block';
-      bar.style.opacity = 1;
-      setTimeout(() => {
-        bar.style.opacity = 0;
-        setTimeout(() => { bar.style.display = 'none'; }, 350);
-      }, duration);
-    }
-
-    // prices for selling
-    let PRICES = {
-        1:"Logs", 
-        2:"Birch Logs", 
-        5:"Oak Logs", 
-        8:"Willow Logs", 
-        12:"Sakura Logs",
-        20:"Japanese Maple Logs", 
-        25:"Sycamore Maple Logs",
-        30:"Gigantic Oak Logs", 
-        35:"Palm Logs",
-        40:"Pitch Pine Logs", 
-        45:"Eastern Redwood Logs",
-        200:"Bird Nests"
-    };
-
-    // items you can buy
-    let BUYABLES = [
-      { cost:50,  name:"Iron Axe",          slot:"weapon", img: "icons/woodcutting/Iron_Axe.png" },
-      { cost:100, name:"Steel Axe",         slot:"weapon", img: "icons/woodcutting/Steel_Axe.png" },
-      { cost:150, name:"Woodcutting Hood",  slot:"head",   img: "icons/woodcutting/Woodcutting_Hood.png" },
-      { cost:150, name:"Woodcutting Top",   slot:"body",   img: "icons/woodcutting/Woodcutting_Top.png" },
-      { cost:150, name:"Woodcutting Legs",  slot:"legs",   img: "icons/woodcutting/Woodcutting_Legs.png" },
-      { cost:150, name:"Woodcutting Boots", slot:"boots",  img: "icons/woodcutting/Woodcutting_Boots.png" },
-      { cost:150, name:"Amulet of Nature",  slot:"neck",   img: "icons/woodcutting/Amulet_of_Nature.png" },
-      { cost:150, name:"Woodcutting Gloves",slot:"ring",   img: "icons/woodcutting/Woodcutting_Gloves.png" }
-    ];
-
+    // — GLOBAL VARIABLES AND STATE —
     let sessionTicket, playFabId;
-    let timer, nextTick, interval;
-    let autoEnabled = true;
+    let timer;          // woodcutting timer
+    let interval, nextTick;
+    let autoEnabled = false;  // woodcutting auto running status
+    let activeSkill = null;   // "woodcutting" or "fishing" or null
 
+    // Main player state
     let state = {
       level: 1,
-      xp: 0,                // XP toward next level
-      xp_total: 0,          // Total XP ever gained
+      xp: 0,
+      xp_total: 0,
       wood: 0,
       gold: 0,
       inventory: {},
@@ -411,16 +336,58 @@
         ring:   null,
         ring2:  null
       },
-      inCombat: false, monsterHP: 0, monsterMaxHP: 0,
+      firemaking: { level: 1, xp: 0, fires: 0 },
+      fishing: { lvl: 1, xp: 0, cnt: 0 },
+      health: 100,
+      maxHealth: 100,
+      inCombat: false,
+      monsterHP: 0,
+      monsterMaxHP: 0,
       lastActive: Date.now()
     };
 
-    // Initialize xp_total if missing (for old saves)
-    if (typeof state.xp_total === "undefined" || isNaN(state.xp_total)) {
-      state.xp_total = XP_TABLE[state.level] + state.xp;
-    }
+    // XP Table
+    let TITLE_ID = "1C6B29", MAX_LEVEL = 99, XP_TABLE = [];
+    (function(){
+      let cum = 0;
+      for (let lvl = 1; lvl <= MAX_LEVEL; lvl++) {
+        cum += Math.floor(lvl + 300 * Math.pow(2, lvl/7));
+        XP_TABLE[lvl] = Math.floor(cum/4);
+      }
+    })();
+    function nextXpFor(l) { return l < MAX_LEVEL ? XP_TABLE[l+1] - XP_TABLE[l] : Infinity; }
+
+    // Prices for selling items
+    let PRICES = {
+      1:"Logs",
+      2:"Birch Logs",
+      5:"Oak Logs",
+      8:"Willow Logs",
+      12:"Sakura Logs",
+      20:"Japanese Maple Logs",
+      25:"Sycamore Maple Logs",
+      30:"Gigantic Oak Logs",
+      35:"Palm Logs",
+      40:"Pitch Pine Logs",
+      45:"Eastern Redwood Logs",
+      200:"Bird Nests"
+    };
+
+    // Items you can buy
+    let BUYABLES = [
+      { cost:50,  name:"Iron Axe",          slot:"weapon", img: "icons/woodcutting/Iron_Axe.png" },
+      { cost:100, name:"Steel Axe",         slot:"weapon", img: "icons/woodcutting/Steel_Axe.png" },
+      { cost:150, name:"Woodcutting Hood",  slot:"head",   img: "icons/woodcutting/Woodcutting_Hood.png" },
+      { cost:150, name:"Woodcutting Top",   slot:"body",   img: "icons/woodcutting/Woodcutting_Top.png" },
+      { cost:150, name:"Woodcutting Legs",  slot:"legs",   img: "icons/woodcutting/Woodcutting_Legs.png" },
+      { cost:150, name:"Woodcutting Boots", slot:"boots",  img: "icons/woodcutting/Woodcutting_Boots.png" },
+      { cost:150, name:"Amulet of Nature",  slot:"neck",   img: "icons/woodcutting/Amulet_of_Nature.png" },
+      { cost:150, name:"Woodcutting Gloves",slot:"ring",   img: "icons/woodcutting/Woodcutting_Gloves.png" }
+    ];
 
     const ICON_PATH = "icons/woodcutting/";
+
+    // Trees data
     let TREES = [
       {id:1,  lvl:1,  xp:25,    name:'Tree',              itemKey:'Logs',                 img:ICON_PATH+'Tree_Level1.png'},
       {id:2,  lvl:10, xp:37.5,  name:'Oak',               itemKey:'Oak Logs',             img:ICON_PATH+'Tree_Oak.png'},
@@ -435,11 +402,8 @@
       {id:11, lvl:95, xp:420,   name:'Eastern Redwood',   itemKey:'Eastern Redwood Logs', img:ICON_PATH+'Tree_Gigantic.png'},
       {id:12, lvl:99, xp:480,   name:'Aradias Legendary', itemKey:'Bird Nests',           img:ICON_PATH+'Tree_Legendary.png'}
     ];
-    window.TREES = TREES;
 
-    state.firemaking = { level:1, xp:0, fires:0 };
-
-    // — XP Gain Helper —
+    // — XP Gain Helper for woodcutting —
     function gainWoodcuttingXP(amount) {
       state.xp      += amount;
       state.xp_total += amount;
@@ -461,7 +425,7 @@
       return js.data;
     }
 
-    async function auth(isLogin){
+    async function auth(isLogin) {
       const u = document.getElementById('username').value;
       const p = document.getElementById('password').value;
       let body = { Username:u, Password:p };
@@ -476,7 +440,7 @@
         playFabId = r.PlayFabId;
         document.getElementById('login-panel').style.display = 'none';
         document.getElementById('app').style.display = '';
-        initGame();
+        await initGame();
       } catch(e) {
         document.getElementById('login-msg').textContent = e.errorMessage || JSON.stringify(e);
       }
@@ -497,25 +461,34 @@
     async function loadState(){
       try {
         let r = await playfabCall('GetUserData',{ Keys:['state'] });
-        if(r.Data.state?.Value) Object.assign(state, JSON.parse(r.Data.state.Value));
+        if(r.Data.state?.Value) {
+          let loadedState = JSON.parse(r.Data.state.Value);
+          // Deep merge loaded state into current state
+          Object.assign(state, loadedState);
+        }
       } catch{}
+      // Initialize missing keys
       state.gold = state.gold || 0;
       state.equipment = state.equipment || { weapon:null, gloves:null };
-      // (re)init total XP if not present after loading
+      if (!state.firemaking) state.firemaking = { level:1, xp:0, fires:0 };
+      if (!state.fishing) state.fishing = { lvl:1, xp:0, cnt:0 };
       if (typeof state.xp_total === "undefined" || isNaN(state.xp_total)) {
         state.xp_total = XP_TABLE[state.level] + state.xp;
       }
+      if (typeof state.health !== "number") state.health = 100;
+      if (typeof state.maxHealth !== "number") state.maxHealth = 100;
     }
 
     // — RENDERING —
-    function renderInventory(){
 
+    function renderInventory(){
       let grid = document.getElementById('inventory-grid'); grid.innerHTML = '';
       let inventory = document.getElementById('inventory');
       inventory.querySelector('h3').onclick = () => inventory.classList.toggle('collapsed');
       
       for(let [name,qty] of Object.entries(state.inventory)){
         if(qty>0){
+          // For filtering, assign category as woodcutting by default (adjust as needed)
           let catName = "woodcutting";
           let card = document.createElement('div'); card.className = 'inv-card cat-'+catName;
           card.innerHTML = `
@@ -526,19 +499,15 @@
           grid.appendChild(card);
         }
       }
-
-
     }
 
     function upInvListing(catName=""){
-      let invListCards = document.getElementById('inventory-grid')
-                                  .querySelectorAll('.inv-card');
+      let invListCards = document.getElementById('inventory-grid').querySelectorAll('.inv-card');
       if("" !== catName){
         invListCards.forEach((i)=>{
           i.classList.add('hidden');
         });
-        let invListCardsFiltered = document.getElementById('inventory-grid')
-                                    .querySelectorAll('[class*=-'+catName+']');
+        let invListCardsFiltered = document.getElementById('inventory-grid').querySelectorAll('[class*=-'+catName+']');
         invListCardsFiltered.forEach((j)=>{
           j.classList.remove('hidden');
         });
@@ -561,7 +530,7 @@
           <button ${qty===0?'disabled':''}>Sell 1</button>
         `;
         card.querySelector('button').onclick = async ()=>{
-          state.inventory[item]--; state.gold+=price;
+          state.inventory[item]--; state.gold+=Number(price);
           await saveState();
           document.getElementById('gold-count').textContent = state.gold;
           renderInventory(); renderShop();
@@ -609,18 +578,15 @@
       }
     }
 
-    // ---- The FIX: renderGrid now shows both Total XP and per-level XP ----
     function renderGrid(){
       document.getElementById('wc-level').textContent    = state.level;
       document.getElementById('wood-count').textContent  = state.wood;
-      // Show XP progress this level
-      document.getElementById('wc-xp').textContent       = state.xp.toFixed(1); // XP this level
-      document.getElementById('wc-xp-total').textContent = state.xp_total.toFixed(1); // Total XP ever
+      document.getElementById('wc-xp').textContent       = state.xp.toFixed(1);
+      document.getElementById('wc-xp-total').textContent = state.xp_total.toFixed(1);
       document.getElementById('wc-next').textContent     = state.level<MAX_LEVEL?nextXpFor(state.level).toFixed(1):'—';
       document.getElementById('player-hp').textContent   = state.health;
       document.getElementById('player-maxhp').textContent= state.maxHealth;
 
-      // Update progress bar
       let xpPct = Math.min(state.xp / nextXpFor(state.level), 1);
       document.getElementById('progress-bar').style.width = (xpPct * 100) + '%';
 
@@ -636,6 +602,10 @@
         let btn = card.querySelector('button');
         btn.onclick = async ()=> {
           if(state.inCombat) return;
+          if(activeSkill && activeSkill !== "woodcutting") {
+            showNotif(`Cannot chop while ${activeSkill} is active.`);
+            return;
+          }
           document.getElementById('chop-sound').currentTime=0;
           document.getElementById('chop-sound').play();
           document.getElementById('progress-text').textContent=`Chopping ${t.name}...`;
@@ -657,44 +627,11 @@
       renderInventory();
     }
 
-    function renderFiremakingGrid(){
-      document.getElementById('fm-level').textContent = state.firemaking.level;
-      document.getElementById('fire-count').textContent = state.firemaking.fires;
-      document.getElementById('fm-xp').textContent = state.firemaking.xp.toFixed(1);
-      document.getElementById('fm-next').textContent = state.firemaking.level<MAX_LEVEL?nextXpFor(state.firemaking.level).toFixed(1):'—';
-      document.getElementById('gold-count-fm').textContent = state.gold;
-
-      let grid = document.getElementById('fire-grid'); grid.innerHTML = '';
-      FIRES.forEach(f=>{
-        let card = document.createElement('div'); card.className='tree-card';
-        card.innerHTML=`
-          <img src="${f.img}" alt="${f.name}">
-          <div class="label">${f.name} (Lv ${f.lvl})</div>
-          <button ${state.firemaking.level<f.lvl?'disabled':''}>Light</button>
-          ${state.firemaking.level<f.lvl?`<div class="lock">Unlock at ${f.lvl}</div>`:''}
-        `;
-        card.querySelector('button').onclick = async ()=>{
-          document.getElementById('progress-text').textContent=`Lighting ${f.name}...`;
-          let bar = document.getElementById('progress-bar');
-          bar.style.transition='width .3s'; bar.style.width='100%';
-          state.firemaking.fires++;
-          state.firemaking.xp += f.xp;
-          while(state.firemaking.level<MAX_LEVEL && state.firemaking.xp>=XP_TABLE[state.firemaking.level+1]) state.firemaking.level++;
-          await saveState(); renderFiremakingGrid();
-          setTimeout(()=>{
-            bar.style.transition='width 0s'; bar.style.width='0%';
-            document.getElementById('progress-text').textContent='';
-          },300);
-        };
-        grid.appendChild(card);
-      });
-    }
-
     // — LEADERBOARD —
     async function refreshLeaderboard(){
       try{
         let r = await playfabCall('GetLeaderboard',{ StatisticName:'WoodcuttingScore', StartPosition:0, MaxResultsCount:5 });
-        let list = document.getElementById('leader-list'); list.innerHTML='';
+        let list = document.getElementById('leader-list'); if(list) list.innerHTML='';
         r.Leaderboard.forEach(p=>{
           let li=document.createElement('li');
           li.textContent=`${p.Position+1}. ${p.DisplayName||p.PlayFabId} – ${p.StatValue}`;
@@ -703,47 +640,84 @@
       }catch{}
     }
 
-    // — AUTO & CONTROLS —
+    // — WOODCUTTING AUTO IDLE & CONTROLS —
     function getInterval(){ let min=2000,max=15000; return Math.min(max,min+(state.level-1)*(max-min)/(MAX_LEVEL-1)); }
-    function animate(){ let pct=(Date.now()-(nextTick-interval))/interval; let bar=document.getElementById('progress-bar'); bar.style.transition='width 0s'; bar.style.width=`${Math.min(Math.max(pct,0),1)*100}%`; if(pct<1) requestAnimationFrame(animate); }
-    async function autoTick() {
-      if (!autoEnabled) return;
-      if (state.inCombat) { timer = setTimeout(autoTick, 1000); return; }
+
+    function animate() {
+      let pct = (Date.now()-(nextTick-interval))/interval;
+      let bar = document.getElementById('progress-bar');
+      bar.style.transition = 'width 0s';
+      bar.style.width = `${Math.min(Math.max(pct, 0), 1)*100}%`;
+      if(pct < 1) requestAnimationFrame(animate);
+    }
+
+    async function autoTickWoodcutting() {
+      if (!autoEnabled || activeSkill !== "woodcutting") return;
+      if (state.inCombat) {
+        timer = setTimeout(autoTickWoodcutting, 1000);
+        return;
+      }
       let t = TREES.filter(t => state.level >= t.lvl).pop();
       document.getElementById('progress-text').textContent = `Chopping ${t.name}...`;
       state.wood++;
       state.inventory[t.itemKey] = (state.inventory[t.itemKey] || 0) + 1;
-      gainWoodcuttingXP(t.xp / 2); // ← unified XP, counts toward both level and total
+      gainWoodcuttingXP(t.xp / 2);
       showNotif(`+1 ${t.itemKey} gathered!`);
       await saveState();
       renderGrid();
-      schedule();
+      scheduleWoodcutting();
       setTimeout(() => {
         let bar = document.getElementById('progress-bar');
         bar.style.transition = 'width 0s'; bar.style.width = '0%';
         document.getElementById('progress-text').textContent = '';
       }, interval);
     }
-    function schedule(){ clearTimeout(timer); if(!autoEnabled) return; interval=getInterval(); nextTick=Date.now()+interval; animate(); timer=setTimeout(autoTick,interval); }
+
+    function scheduleWoodcutting() {
+      clearTimeout(timer);
+      if (!autoEnabled || activeSkill !== "woodcutting") return;
+      interval = getInterval();
+      nextTick = Date.now() + interval;
+      animate();
+      timer = setTimeout(autoTickWoodcutting, interval);
+    }
 
     let stopBtn = document.getElementById('stop-btn'), resumeBtn = document.getElementById('resume-btn');
-    stopBtn.onclick = ()=>{ autoEnabled=false; clearTimeout(timer); stopBtn.style.display='none'; resumeBtn.style.display=''; };
-    resumeBtn.onclick = ()=>{ autoEnabled=true; resumeBtn.style.display='none'; stopBtn.style.display=''; schedule(); };
-    resumeBtn.style.display='none';
+    stopBtn.onclick = () => {
+      autoEnabled = false;
+      if (activeSkill === "woodcutting") activeSkill = null;
+      clearTimeout(timer);
+      stopBtn.style.display = 'none';
+      resumeBtn.style.display = '';
+    };
+    resumeBtn.onclick = () => {
+      if (activeSkill && activeSkill !== "woodcutting") {
+        showNotif(`Cannot start woodcutting, ${activeSkill} is already active.`);
+        return;
+      }
+      autoEnabled = true;
+      activeSkill = "woodcutting";
+      resumeBtn.style.display = 'none';
+      stopBtn.style.display = '';
+      scheduleWoodcutting();
+    };
+    resumeBtn.style.display = 'none';
 
     // — SHOP FILTERS & COLLAPSE —
     let shopPanel = document.getElementById('shop');
-    shopPanel.querySelector('h3').onclick = () => shopPanel.classList.toggle('collapsed');
-    shopPanel.querySelector('.shop-filters').onclick = e => {
-      if(!e.target.matches('button[data-filter]')) return;
-      shopPanel.querySelectorAll('.shop-filters button').forEach(b => b.classList.remove('active'));
-      e.target.classList.add('active');
-      let m = e.target.dataset.filter;
+    if(shopPanel) {
+      shopPanel.querySelector('h3').onclick = () => shopPanel.classList.toggle('collapsed');
+      shopPanel.querySelector('.shop-filters').onclick = e => {
+        if(!e.target.matches('button[data-filter]')) return;
+        shopPanel.querySelectorAll('.shop-filters button').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        let m = e.target.dataset.filter;
 
-      document.getElementById('shop-grid').style.display = (m === 'buy') ? 'none' : '';
-      document.getElementById('buy-grid').style.display  = (m === 'buy') ? '' : 'none';
-      document.getElementById('buy-header').style.display = (m === 'buy') ? '' : 'none'; // <-- THIS LINE
-    };
+        document.getElementById('shop-grid').style.display = (m === 'buy') ? 'none' : '';
+        document.getElementById('buy-grid').style.display  = (m === 'buy') ? '' : 'none';
+        document.getElementById('buy-header').style.display = (m === 'buy') ? '' : 'none';
+      };
+    }
 
     // — INITIALIZE —
     async function initGame(){
@@ -754,30 +728,44 @@
       renderBuy();
       renderEquipment();
       refreshLeaderboard();
-      schedule();
+      // Auto woodcutting defaults off on load
+      autoEnabled = false;
+      activeSkill = null;
+      resumeBtn.style.display = 'none';
+      stopBtn.style.display = '';
     }
 
-    document.querySelectorAll('.skill-list li').forEach(skill => {
-    skill.onclick = () => {
-      document.querySelectorAll('.skill-list li').forEach(li => li.classList.remove('active'));
-      skill.classList.add('active');
-      let skillName = skill.getAttribute('data-skill');
-      document.getElementById('woodcutting-header').style.display = skillName==='woodcutting'?'':'none';
-      document.getElementById('tree-grid').style.display = skillName==='woodcutting'?'':'none';
-      document.getElementById('firemaking-header').style.display  = skillName==='firemaking'?'flex':'none';
-      if(skillName==='woodcutting') renderGrid();
-      if(skillName==='firemaking') renderFiremakingUI();
-    };
-    });
-  </script>
-  <script type="module">
-    // —— Fishing module integrated with global state & persistence ——
-    // Ensure the main `state` object holds inventory & fishing
-    state.inventory = state.inventory || {};
-    state.fishing   = state.fishing   || { lvl: 1, xp: 0, cnt: 0 };
-    const fishState = state.fishing;
+    // NOTIFICATION helper
+    function showNotif(msg, duration=1500) {
+      let bar = document.getElementById('notif-bar');
+      bar.textContent = msg;
+      bar.style.display = 'block';
+      bar.style.opacity = 1;
+      setTimeout(() => {
+        bar.style.opacity = 0;
+        setTimeout(() => { bar.style.display = 'none'; }, 350);
+      }, duration);
+    }
 
-    // XP table
+    // — SKILL LIST TAB SWITCHING —
+
+    document.querySelectorAll('.skill-list li').forEach(skill => {
+      skill.onclick = () => {
+        document.querySelectorAll('.skill-list li').forEach(li => li.classList.remove('active'));
+        skill.classList.add('active');
+        let skillName = skill.getAttribute('data-skill');
+        document.getElementById('woodcutting-header').style.display = skillName==='woodcutting'?'':'none';
+        document.getElementById('tree-grid').style.display = skillName==='woodcutting'?'':'none';
+        document.getElementById('firemaking-header').style.display  = skillName==='firemaking'?'flex':'none';
+        document.getElementById('fishing-panel').style.display = skillName==='fishing'?'':'none';
+        if(skillName==='woodcutting') renderGrid();
+        if(skillName==='firemaking') renderFiremakingUI();
+        if(skillName==='fishing') renderFishing();
+      };
+    });
+
+    // — FISHING MODULE —
+
     const XP = (() => {
       const maxLevel = 99;
       const table = new Array(maxLevel + 2).fill(0);
@@ -792,7 +780,6 @@
     })();
     const MAX = XP.length - 2;
 
-    // Fish definitions
     const FISH = [
       { lvl: 1,  name: 'Shrimp',    img: 'Fish_Shrimp.png',    xp: 10  },
       { lvl: 5,  name: 'Anchovy',   img: 'Fish_Anchovy.png',   xp: 15  },
@@ -805,14 +792,14 @@
       { lvl: 99, name: 'Leviathan', img: 'Fish_Leviathan.png', xp: 300 }
     ];
 
-    // DOM IDs
+    // DOM IDs for fishing UI elements
     const IDS = {
       level: 'fish-level', count: 'fish-count', xp: 'fish-xp', next: 'fish-next',
       bar: 'fish-progress-bar', text: 'fish-progress-text', grid: 'fish-grid',
       start: 'fish-start', stop: 'fish-stop'
     };
 
-    // Cache UI
+    // Cache fishing UI elements
     const ui = {};
     function cacheUI() {
       for (let k in IDS) ui[k] = document.getElementById(IDS[k]);
@@ -822,8 +809,8 @@
       return lvl < MAX ? XP[lvl + 1] - XP[lvl] : Infinity;
     }
 
-    // Render grid & stats
     function renderFishing() {
+      let fishState = state.fishing;
       ui.level.textContent = fishState.lvl;
       ui.count.textContent = fishState.cnt;
       ui.xp.textContent    = fishState.xp.toFixed(1);
@@ -844,7 +831,7 @@
       });
     }
 
-    // Animate bar
+    // Animate progress bar for fishing
     function updateBar(dur = .3) {
       ui.bar.style.transition = `width ${dur}s`;
       ui.bar.style.width      = '100%';
@@ -858,14 +845,12 @@
       });
     }
 
-    // Single catch
     function catchFish(fish) {
+      let fishState = state.fishing;
       fishState.cnt++;
       fishState.xp  += fish.xp;
-      // Add to shared inventory
       state.inventory[fish.name] = (state.inventory[fish.name] || 0) + 1;
 
-      // Level up
       while (fishState.lvl < MAX && fishState.xp >= nextXp(fishState.lvl)) {
         fishState.xp  -= nextXp(fishState.lvl);
         fishState.lvl++;
@@ -873,45 +858,51 @@
       if (fishState.lvl >= MAX) fishState.xp = 0;
 
       ui.text.textContent = `Fishing ${fish.name}…`;
-      updateBar(); renderFishing(); resetBar();
-      saveState(); renderInventory();
+      updateBar();
+      renderFishing();
+      resetBar();
+      saveState();
+      renderInventory();
     }
 
-    // Auto fishing
-    let autoTimer = null, isRunning = false;
+    let autoTimer = null;
+    let isRunning = false;
+
     function computeInterval() {
       const min = 2000, max = 15000;
-      return min + (fishState.lvl - 1) * (max - min) / (MAX - 1);
-    }
-    function autoTick() {
-      if (!isRunning) return;
-      const avail = FISH.filter(f => fishState.lvl >= f.lvl);
-      catchFish(avail[avail.length - 1]);
-      autoTimer = setTimeout(autoTick, computeInterval());
+      return min + (state.fishing.lvl - 1) * (max - min) / (MAX - 1);
     }
 
-    // Controls
+    function autoTickFishing() {
+      if (!isRunning || activeSkill !== 'fishing') return;
+      const avail = FISH.filter(f => state.fishing.lvl >= f.lvl);
+      catchFish(avail[avail.length - 1]);
+      autoTimer = setTimeout(autoTickFishing, computeInterval());
+    }
+
     function initFishing() {
       cacheUI();
-      ui.start.addEventListener('click', () => { if (!isRunning) { isRunning = true; autoTick(); }});
-      ui.stop .addEventListener('click', () => { isRunning = false; clearTimeout(autoTimer); });
+      ui.start.addEventListener('click', () => {
+        if (isRunning) return;
+        if (activeSkill && activeSkill !== 'fishing') {
+          showNotif(`Cannot start fishing, ${activeSkill} is already active.`);
+          return;
+        }
+        isRunning = true;
+        activeSkill = 'fishing';
+        autoTickFishing();
+      });
+      ui.stop .addEventListener('click', () => {
+        isRunning = false;
+        clearTimeout(autoTimer);
+        if (activeSkill === 'fishing') activeSkill = null;
+      });
       renderFishing();
     }
 
-    // Tab switching
     window.addEventListener('DOMContentLoaded', () => {
       initFishing();
-      const tabs      = document.querySelectorAll('.skill-list li');
-      const fishPanel = document.getElementById('fishing-panel');
-
-      tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-          fishPanel.style.display = (tab.dataset.skill === 'fishing') ? '' : 'none';
-          if (tab.dataset.skill === 'fishing') renderFishing();
-        });
-      });
     });
   </script>
-  <script src="firemaking.js"></script>
 </body>
 </html>
