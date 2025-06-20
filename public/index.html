@@ -231,8 +231,7 @@
         <div class="stats">
           Level <span id="wc-level">1</span> |
           Wood <span id="wood-count">0</span> |
-          XP <span id="wc-xp">0</span>/<span id="wc-next">0</span> |
-          Gold <span id="gold-count">0</span> |
+          Total XP <span id="wc-xp-total">0</span> | XP this level <span id="wc-xp"></span> | XP to Level<span id="wc-next">0</span> |
           <span class="hp">HP <span id="player-hp">100</span>/<span id="player-maxhp">100</span></span>
           <button id="stop-btn">Stop</button>
           <button id="resume-btn">Resume</button>
@@ -292,7 +291,7 @@
   </div>
   </div>
 
-  <script>
+<script>
     // — LOGIN HANDLER (with background removal) —
     async function auth(isLogin) {
       const u = document.getElementById('username').value;
@@ -376,9 +375,12 @@
     let autoEnabled = true;
 
     let state = {
-      level:1, xp:0, wood:0, gold:0,
-      health:100, maxHealth:100,
-      inventory:{},
+      level: 1,
+      xp: 0,                // XP toward next level
+      xp_total: 0,          // Total XP ever gained
+      wood: 0,
+      gold: 0,
+      inventory: {},
       equipment: {
         head:   null,
         cape:   null,
@@ -391,9 +393,14 @@
         ring:   null,
         ring2:  null
       },
-      inCombat:false, monsterHP:0, monsterMaxHP:0,
-      lastActive:Date.now()
+      inCombat: false, monsterHP: 0, monsterMaxHP: 0,
+      lastActive: Date.now()
     };
+
+    // Initialize xp_total if missing (for old saves)
+    if (typeof state.xp_total === "undefined" || isNaN(state.xp_total)) {
+      state.xp_total = XP_TABLE[state.level] + state.xp;
+    }
 
     const ICON_PATH = "icons/woodcutting/";
     let TREES = [
@@ -413,6 +420,17 @@
     window.TREES = TREES;
 
     state.firemaking = { level:1, xp:0, fires:0 };
+
+    // — XP Gain Helper —
+    function gainWoodcuttingXP(amount) {
+      state.xp      += amount;
+      state.xp_total += amount;
+      while (state.level < MAX_LEVEL && state.xp >= nextXpFor(state.level)) {
+        state.xp -= nextXpFor(state.level);
+        state.level++;
+      }
+    }
+
     // — PLAYFAB HELPER & AUTH —
     async function playfabCall(ep, payload){
       let headers = {'Content-Type':'application/json','X-ReportErrorAsSuccess':'true'};
@@ -465,6 +483,10 @@
       } catch{}
       state.gold = state.gold || 0;
       state.equipment = state.equipment || { weapon:null, gloves:null };
+      // (re)init total XP if not present after loading
+      if (typeof state.xp_total === "undefined" || isNaN(state.xp_total)) {
+        state.xp_total = XP_TABLE[state.level] + state.xp;
+      }
     }
 
     // — RENDERING —
@@ -528,33 +550,35 @@
     }
 
     function renderEquipment() {
-      // for each equipment slot in state.equipment…
       for (let [slot, itemName] of Object.entries(state.equipment)) {
-        // find the matching .slot.<slot> element
         let el = document.querySelector(`.slot.${slot}`);
         if (!el) continue;
-
-        // if we have an item equipped, draw its icon + label…
         if (itemName) {
           el.innerHTML = `
             <img src="${ICON_PATH}${itemName.replace(/ /g,'_')}.png" onerror="this.style.opacity=0.5">
             <div class="slot-label">${itemName}</div>
           `;
         } else {
-          // otherwise keep the default label
           let label = el.querySelector('.slot-label')?.textContent || slot;
           el.innerHTML = `<div class="slot-label">${label}</div>`;
         }
       }
     }
 
+    // ---- The FIX: renderGrid now shows both Total XP and per-level XP ----
     function renderGrid(){
       document.getElementById('wc-level').textContent    = state.level;
       document.getElementById('wood-count').textContent  = state.wood;
-      document.getElementById('wc-xp').textContent       = state.xp.toFixed(1);
+      // Show XP progress this level
+      document.getElementById('wc-xp').textContent       = state.xp.toFixed(1); // XP this level
+      document.getElementById('wc-xp-total').textContent = state.xp_total.toFixed(1); // Total XP ever
       document.getElementById('wc-next').textContent     = state.level<MAX_LEVEL?nextXpFor(state.level).toFixed(1):'—';
       document.getElementById('player-hp').textContent   = state.health;
       document.getElementById('player-maxhp').textContent= state.maxHealth;
+
+      // Update progress bar
+      let xpPct = Math.min(state.xp / nextXpFor(state.level), 1);
+      document.getElementById('progress-bar').style.width = (xpPct * 100) + '%';
 
       let grid = document.getElementById('tree-grid'); grid.innerHTML = '';
       TREES.forEach(t=>{
@@ -573,9 +597,10 @@
           document.getElementById('progress-text').textContent=`Chopping ${t.name}...`;
           let bar = document.getElementById('progress-bar');
           bar.style.transition='width .3s'; bar.style.width='100%';
-          state.wood++; state.inventory[t.itemKey]++; state.xp+=t.xp;
-          showNotif(`+1 ${t.itemKey} gathered!`); // <-- Add here
-          while(state.level<MAX_LEVEL&&state.xp>=XP_TABLE[state.level+1]) state.level++;
+          state.wood++;
+          state.inventory[t.itemKey] = (state.inventory[t.itemKey]||0) + 1;
+          gainWoodcuttingXP(t.xp);
+          showNotif(`+1 ${t.itemKey} gathered!`);
           await saveState(); renderGrid();
           setTimeout(()=>{
             bar.style.transition='width 0s'; bar.style.width='0%';
@@ -637,7 +662,24 @@
     // — AUTO & CONTROLS —
     function getInterval(){ let min=2000,max=15000; return Math.min(max,min+(state.level-1)*(max-min)/(MAX_LEVEL-1)); }
     function animate(){ let pct=(Date.now()-(nextTick-interval))/interval; let bar=document.getElementById('progress-bar'); bar.style.transition='width 0s'; bar.style.width=`${Math.min(Math.max(pct,0),1)*100}%`; if(pct<1) requestAnimationFrame(animate); }
-    async function autoTick(){ if(!autoEnabled) return; if(state.inCombat){ timer=setTimeout(autoTick,1000); return;} let t=TREES.filter(t=>state.level>=t.lvl).pop(); document.getElementById('progress-text').textContent=`Chopping ${t.name}...`; state.wood++; state.inventory[t.itemKey]++; state.xp+=t.xp/2;showNotif(`+1 ${t.itemKey} gathered!`); while(state.level<MAX_LEVEL&&state.xp>=XP_TABLE[state.level+1]) state.level++; await saveState(); renderGrid(); schedule(); setTimeout(()=>{ let bar=document.getElementById('progress-bar'); bar.style.transition='width 0s'; bar.style.width='0%'; document.getElementById('progress-text').textContent=''; },interval); }
+    async function autoTick() {
+      if (!autoEnabled) return;
+      if (state.inCombat) { timer = setTimeout(autoTick, 1000); return; }
+      let t = TREES.filter(t => state.level >= t.lvl).pop();
+      document.getElementById('progress-text').textContent = `Chopping ${t.name}...`;
+      state.wood++;
+      state.inventory[t.itemKey] = (state.inventory[t.itemKey] || 0) + 1;
+      gainWoodcuttingXP(t.xp / 2); // ← unified XP, counts toward both level and total
+      showNotif(`+1 ${t.itemKey} gathered!`);
+      await saveState();
+      renderGrid();
+      schedule();
+      setTimeout(() => {
+        let bar = document.getElementById('progress-bar');
+        bar.style.transition = 'width 0s'; bar.style.width = '0%';
+        document.getElementById('progress-text').textContent = '';
+      }, interval);
+    }
     function schedule(){ clearTimeout(timer); if(!autoEnabled) return; interval=getInterval(); nextTick=Date.now()+interval; animate(); timer=setTimeout(autoTick,interval); }
 
     let stopBtn = document.getElementById('stop-btn'), resumeBtn = document.getElementById('resume-btn');
