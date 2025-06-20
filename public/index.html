@@ -19,7 +19,7 @@
     #login-panel .controls button {flex: 1; padding: 10px; border: none;border-radius: 4px; background: #3a7bd5; color: #fff;cursor: pointer;}
     #login-msg { color: #f88; text-align: center; margin-top: 6px;}
     #loading-screen {display: none;position: absolute; top: 0; left: 0;width: 100%; height: 100%;background: rgba(0,0,0,0.8);color: #fff; font-size: 1.2rem;display: flex; align-items: center; justify-content: center;flex-direction: column;z-index: 9;}
-    #loading-screen .spinner { display: none !important; }
+    #loading-screen .spinner, .hidden { display: none !important; }
     
     /* Sidebar */
     .sidebar {width: 300px;min-width: 220px;max-width: 350px;background: #1f1f1f;border-right: 1px solid #333;padding: 20px 0 20px 0;display: flex;flex-direction: column;align-items: center;height: 100vh;box-sizing: border-box;overflow-y: auto;overflow-x: hidden;}
@@ -33,16 +33,18 @@
     .skill-list img { width: 32px; height: 32px; margin-right: 8px; }
     #inventory, #equipment, #shop { width: 90%; margin: 0 auto 20px auto; }
     #inventory h3, #equipment h3, #shop h3 { color: #ccc; font-size: 1rem; border-bottom: 1px solid #444; padding-bottom: 4px; margin-bottom: 8px; }
+    #inventory-filter{margin: 4px auto 10px}
+    .inventory-filters.list-filters{text-align: center}
     .inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 8px; width: 100%; }
     .inv-card { background: #232323; border-radius: 4px; box-shadow: 0 2px 6px #000a; padding: 8px; display: flex; flex-direction: column; align-items: center; font-size: .82rem; text-align:center;}
     .inv-card img { width: 32px; height: 32px; object-fit: contain; margin-bottom: 2px; filter: drop-shadow(0 1px 2px #0007); }
     .leader-list { list-style: none; padding-left: 0; }
     .leader-list li { padding: 6px 0; border-bottom: 1px solid #333; color: #ddd; font-size: .9rem; }
-    #shop h3 { display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; }
-    #shop h3 .arrow { transition: transform 0.2s ease; }
-    #shop.collapsed #shop-grid, #shop.collapsed .inv-grid { display: none !important}
-    #shop.collapsed h3 .arrow { transform: rotate(-90deg); }
-    #shop h4 { color: #ccc; font-size: 1rem; margin: 12px auto; padding-bottom: 4px; border-bottom: 1px solid #444; text-align: center;}
+    .side-box h3 { display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; }
+    .side-box h3 .arrow { transition: transform 0.2s ease; }
+    .side-box.collapsed .list-ui { display: none !important}
+    .side-box.collapsed h3 .arrow { transform: rotate(-90deg); }
+    .side-box h4 { color: #ccc; font-size: 1rem; margin: 12px auto; padding-bottom: 4px; border-bottom: 1px solid #444; text-align: center;}
     .shop-filters { display: flex; justify-content: center; gap: 8px; margin: 8px 0; }
     .shop-filters button { padding: 4px 8px; border: none; border-radius: 4px; background: #2a2a2a; color: #fff; cursor: pointer; font-size: .85rem; white-space:nowrap;}
     .shop-filters button.active { background: #3a7bd5; }
@@ -203,11 +205,26 @@
         <div class="slot ring2"><div class="slot-label">Ring</div></div>
       </div>
 
-      <div id="inventory">
-        <h3>Inventory</h3>
-        <div id="inventory-grid" class="inv-grid"></div>
+      <div id="inventory" class="side-box">
+        <h3>Inventory <span class="arrow">▼</span></h3>
+        <div class="list-ui">
+          <div class="inventory-filters list-filters">
+            <select id="inventory-filter" onchange="upInvListing(this.value)">
+              <option value="">All</option>
+              <option value="woodcutting">Woodcutting</option>
+              <option value="firemaking">Firemaking</option>
+              <option value="fishing">Fishing</option>
+              <option value="cooking">Cooking</option>
+              <option value="mining">Mining</option>
+              <option value="smithing">Smithing</option>
+              <option value="fletching">Fletching</option>
+            </select>
+          </div>
+          <div id="inventory-grid" class="inv-grid"></div>
+        </div>
       </div>
-      <div id="shop">
+
+      <div id="shop" class="side-box">
         <h3>Shop <span class="arrow">▼</span></h3>
         <div class="shop-filters">
           <button data-filter="all" class="active">All</button>
@@ -491,10 +508,15 @@
 
     // — RENDERING —
     function renderInventory(){
+
       let grid = document.getElementById('inventory-grid'); grid.innerHTML = '';
+      let inventory = document.getElementById('inventory');
+      inventory.querySelector('h3').onclick = () => inventory.classList.toggle('collapsed');
+      
       for(let [name,qty] of Object.entries(state.inventory)){
         if(qty>0){
-          let card = document.createElement('div'); card.className = 'inv-card';
+          let catName = "woodcutting";
+          let card = document.createElement('div'); card.className = 'inv-card cat-'+catName;
           card.innerHTML = `
             <img src="${ICON_PATH}${name.replace(/ /g,'_')}.png" onerror="this.style.opacity=.25">
             <div class="qty">×${qty}</div>
@@ -502,6 +524,27 @@
           `;
           grid.appendChild(card);
         }
+      }
+
+
+    }
+
+    function upInvListing(catName=""){
+      let invListCards = document.getElementById('inventory-grid')
+                                  .querySelectorAll('.inv-card');
+      if("" !== catName){
+        invListCards.forEach((i)=>{
+          i.classList.add('hidden');
+        });
+        let invListCardsFiltered = document.getElementById('inventory-grid')
+                                    .querySelectorAll('[class*=-'+catName+']');
+        invListCardsFiltered.forEach((j)=>{
+          j.classList.remove('hidden');
+        });
+      }else{
+        invListCards.forEach((k)=>{
+          k.classList.remove('hidden');
+        });
       }
     }
 
